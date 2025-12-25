@@ -153,7 +153,17 @@ import { portfolio, tabs } from "../data/portfolio";
         <!-- Ask LLM Section -->
         <div class="pt-4 border-t border-gray-200 space-y-4">
           <h3 class="text-xl font-semibold flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
               <path d="M12 8V4H8"></path>
               <rect width="16" height="12" x="4" y="8" rx="2"></rect>
               <path d="M2 14h2"></path>
@@ -164,25 +174,39 @@ import { portfolio, tabs } from "../data/portfolio";
             Ask AI about this project
           </h3>
           <div class="flex gap-2">
-            <input 
-              type="text" 
-              id="llm-prompt" 
+            <input
+              type="text"
+              id="llm-prompt"
               placeholder="Ask anything about this project..."
               class="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
             />
-            <button 
+            <button
               id="llm-submit"
               class="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span id="llm-btn-text">Ask</span>
-              <svg id="llm-spinner" class="hidden animate-spin" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg
+                id="llm-spinner"
+                class="hidden animate-spin"
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
                 <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
               </svg>
             </button>
           </div>
-          <div id="llm-response" class="hidden p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div
+            id="llm-response"
+            class="hidden p-4 bg-gray-50 rounded-lg border border-gray-200"
+          >
             <p class="text-sm text-gray-500 mb-2">AI Response:</p>
-            <p id="llm-response-text" class="text-gray-700 whitespace-pre-wrap"></p>
+            <p id="llm-response-text" class="text-gray-700 whitespace-pre-wrap">
+            </p>
           </div>
           <p id="llm-error" class="hidden text-red-500 text-sm"></p>
         </div>
@@ -239,32 +263,25 @@ import { portfolio, tabs } from "../data/portfolio";
   const llmSpinner = document.getElementById("llm-spinner");
   const llmBtnText = document.getElementById("llm-btn-text");
 
-  let currentProjectContext = {
-    name: "",
-    desc: "",
-    category: ""
-  };
+  // TODO: Replace with your AI service endpoint
+  const AI_API_ENDPOINT = "https://your-ai-service.com/api/chat";
 
-  async function askLLM(prompt: string) {
-    const response = await fetch("/api/chat", {
+  async function askAI(prompt: string) {
+    const response = await fetch(AI_API_ENDPOINT, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        prompt,
-        projectName: currentProjectContext.name,
-        projectDesc: currentProjectContext.desc,
-        projectCategory: currentProjectContext.category
-      })
+      body: JSON.stringify({ prompt }),
     });
 
     const data = await response.json();
-    
+
     if (!response.ok) {
       throw new Error(data.error || "Failed to get response");
     }
 
+    // TODO: Adjust based on your API response structure
     return data.response;
   }
 
@@ -280,12 +297,17 @@ import { portfolio, tabs } from "../data/portfolio";
     if (llmResponse) llmResponse.classList.add("hidden");
 
     try {
-      const response = await askLLM(prompt);
+      const response = await askAI(prompt);
       if (llmResponseText) llmResponseText.textContent = response;
       if (llmResponse) llmResponse.classList.remove("hidden");
     } catch (error) {
       if (llmError) {
-        llmError.textContent = error instanceof Error ? error.message : "An error occurred";
+        const errorMsg = error instanceof Error ? error.message : "";
+        if (errorMsg.toLowerCase().includes("failed to fetch") || errorMsg.toLowerCase().includes("network")) {
+          llmError.textContent = "🎮 Sorry, we couldn't afford the GPUs to answer that. Have you seen NVIDIA prices lately? 💸";
+        } else {
+          llmError.textContent = errorMsg || "An error occurred";
+        }
         llmError.classList.remove("hidden");
       }
     } finally {
@@ -310,14 +332,7 @@ import { portfolio, tabs } from "../data/portfolio";
     const category = item.getAttribute("data-category");
     const link = item.getAttribute("data-link");
 
-    // Update project context for LLM
-    currentProjectContext = {
-      name: name || "",
-      desc: desc || "",
-      category: category || ""
-    };
-
-    // Reset LLM state
+    // Reset AI chat state
     if (llmPrompt) llmPrompt.value = "";
     if (llmResponse) llmResponse.classList.add("hidden");
     if (llmError) llmError.classList.add("hidden");
