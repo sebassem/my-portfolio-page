@@ -1,80 +1,53 @@
 ---
-import Bars from "./Bars.astro"
+import Bars from "./Bars.astro";
 
-import svgUnderline from '../assets/underline.svg'
-import arrowCard from '../assets/arrow-card.svg'
-
-const portfolio = [
-  { 
-    name: 'Portfolio design', desc: `UI design - User research - webflow development`,
-    cover: `https://images.pexels.com/photos/1051075/pexels-photo-1051075.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2`,
-    category: 'web',
-    link: 'https://github.com/sebassem'
-  },
-  { 
-    name: 'Portfolio design', desc: `UI design - User research - webflow development`,
-    cover: `https://images.pexels.com/photos/2303781/pexels-photo-2303781.jpeg?auto=compress&cs=tinysrgb&w=1600`,
-    category: 'branding',
-    link: 'https://example.com/project-2'
-  },
-  { 
-    name: 'Portfolio design', desc: `UI design - User research - webflow development`,
-    cover: `https://images.pexels.com/photos/441963/pexels-photo-441963.jpeg?auto=compress&cs=tinysrgb&w=1600`,
-    category: 'mobile',
-    link: 'https://example.com/project-3'
-  },
-  { 
-    name: 'Portfolio design', desc: `UI design - User research - webflow development`,
-    cover: `https://images.pexels.com/photos/245240/pexels-photo-245240.jpeg?auto=compress&cs=tinysrgb&w=1600`,
-    category: 'web',
-    link: 'https://example.com/project-4'
-  },
-  { 
-    name: 'Portfolio design', desc: `UI design - User research - webflow development`,
-    cover: `https://images.pexels.com/photos/245240/pexels-photo-245240.jpeg?auto=compress&cs=tinysrgb&w=1600`,
-    category: 'web',
-    link: 'https://example.com/project-5'
-  },
-  { 
-    name: 'Portfolio design', desc: `UI design - User research - webflow development`,
-    cover: `https://images.pexels.com/photos/245240/pexels-photo-245240.jpeg?auto=compress&cs=tinysrgb&w=1600`,
-    category: 'web',
-    link: 'https://example.com/project-6'
-  },
-  { 
-    name: 'Portfolio design', desc: `UI design - User research - webflow development`,
-    cover: `https://images.pexels.com/photos/245240/pexels-photo-245240.jpeg?auto=compress&cs=tinysrgb&w=1600`,
-    category: 'web',
-    link: 'https://example.com/project-7'
-  },
-]
-
-const tabs = ['all', 'web', 'branding', 'mobile']
+import svgUnderline from "../assets/underline.svg";
+import arrowCard from "../assets/arrow-card.svg";
+import { portfolio, tabs } from "../data/portfolio";
 ---
 
-
 <section class="py-25 space-y-10 px-5" id="work">
-    <div class="max-w-md mx-auto relative ">
-      <h1 class="text-4xl font-medium text-center">My Portfolio</h1>
-      <img src={svgUnderline.src} alt="arrow" width="140" class="absolute left-50 -bottom-1" />
-    </div>
+  <div class="max-w-md mx-auto relative">
+    <h1 class="text-4xl font-medium text-center">My Portfolio</h1>
+    <img
+      src={svgUnderline.src}
+      alt="arrow"
+      width="140"
+      class="absolute left-50 -bottom-1"
+    />
+  </div>
 
-    <!-- Tabs -->
-    <div class="flex justify-center gap-2 flex-wrap">
-      {tabs.map((tab, index) => (
-        <button 
+  <!-- Tabs -->
+  <div class="flex justify-center gap-2 flex-wrap">
+    {
+      tabs.map((tab, index) => (
+        <button
           data-tab={tab}
-          class={`tab-btn px-6 py-2 rounded-full border-2 border-black font-medium capitalize transition-all duration-200 hover:bg-black hover:text-white ${index === 0 ? 'bg-black text-white' : 'bg-white text-black'}`}
+          class={`tab-btn px-6 py-2 rounded-full border-2 border-black font-medium capitalize transition-all duration-200 hover:bg-black hover:text-white ${index === 0 ? "bg-black text-white" : "bg-white text-black"}`}
         >
           {tab}
         </button>
-      ))}
-    </div>
-    <div class="max-w-6xl mx-auto flex flex-wrap justify-center gap-6" id="portfolio-grid"> 
-      {portfolio.map((item, index) => (
-        <a href="#" data-category={item.category} data-index={index} data-name={item.name} data-desc={item.desc} data-cover={item.cover} data-link={item.link} class="portfolio-item w-[calc(50%-12px)] md:w-[calc(25%-18px)] flex flex-col bg-white p-5 group relative transition-all duration-200 hover:shadow-[4px_4px_0px_rgba(0,0,0,0.3)]">
+      ))
+    }
+  </div>
+  <div
+    class="max-w-6xl mx-auto flex flex-wrap justify-center gap-6"
+    id="portfolio-grid"
+  >
+    {
+      portfolio.map((item, index) => (
+        <a
+          href="#"
+          data-category={item.category}
+          data-index={index}
+          data-name={item.name}
+          data-desc={item.desc}
+          data-cover={item.cover}
+          data-link={item.link}
+          class="portfolio-item w-[calc(50%-12px)] md:w-[calc(25%-18px)] flex flex-col bg-white p-5 group relative transition-all duration-200 hover:shadow-[4px_4px_0px_rgba(0,0,0,0.3)]"
+        >
           <div class="w-full h-[200px] overflow-hidden border-2">
-          <img src={item.cover} alt="" class="w-full h-full object-cover" />
+            <img src={item.cover} alt="" class="w-full h-full object-cover" />
           </div>
           <div class="space-y-1 pt-4">
             <div class="flex pr-2">
@@ -85,44 +58,92 @@ const tabs = ['all', 'web', 'branding', 'mobile']
           </div>
           <Bars />
         </a>
-      ))}
-    </div>
+      ))
+    }
+  </div>
 </section>
 
 <!-- Modal -->
 <div id="portfolio-modal" class="fixed inset-0 z-50 hidden">
   <!-- Backdrop -->
-  <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" id="modal-backdrop"></div>
-  
+  <div
+    class="absolute inset-0 bg-black/80 backdrop-blur-sm"
+    id="modal-backdrop"
+  >
+  </div>
+
   <!-- Modal Content -->
   <div class="absolute inset-0 flex items-center justify-center p-4">
-    <div class="relative bg-white max-w-4xl w-full max-h-[90vh] overflow-y-auto rounded-lg shadow-2xl">
+    <div
+      class="relative bg-white max-w-4xl w-full max-h-[90vh] overflow-y-auto rounded-lg shadow-2xl"
+    >
       <!-- Close Button -->
-      <button id="modal-close" class="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center bg-black text-white rounded-full hover:bg-gray-800 transition-colors">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <button
+        id="modal-close"
+        class="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
       </button>
-      
+
       <!-- Image -->
       <div class="w-full h-[300px] md:h-[400px] overflow-hidden">
-        <img id="modal-image" src="" alt="" class="w-full h-full object-cover" />
+        <img
+          id="modal-image"
+          src=""
+          alt=""
+          class="w-full h-full object-cover"
+        />
       </div>
-      
+
       <!-- Info -->
       <div class="p-8 space-y-4">
-        <span id="modal-category" class="inline-block px-4 py-1 bg-black text-white text-sm font-medium rounded-full capitalize"></span>
+        <span
+          id="modal-category"
+          class="inline-block px-4 py-1 bg-black text-white text-sm font-medium rounded-full capitalize"
+        ></span>
         <h2 id="modal-name" class="text-3xl font-bold"></h2>
         <p id="modal-desc" class="text-gray-600 text-lg"></p>
-        
+
         <!-- Placeholder content for MVP -->
         <div class="pt-4 border-t border-gray-200 space-y-4">
           <h3 class="text-xl font-semibold">Project Details</h3>
-          <p class="text-gray-600">This is where you can add more detailed information about the project, including the client, timeline, technologies used, and your role in the project.</p>
-          <a id="modal-link" href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-6 py-3 bg-black text-white font-medium rounded-full hover:bg-gray-800 transition-colors">
+          <p class="text-gray-600">
+            This is where you can add more detailed information about the
+            project, including the client, timeline, technologies used, and your
+            role in the project.
+          </p>
+          <a
+            id="modal-link"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-2 px-6 py-3 bg-black text-white font-medium rounded-full hover:bg-gray-800 transition-colors"
+          >
             View Live Project
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
               <line x1="7" y1="17" x2="17" y2="7"></line>
               <polyline points="7 7 17 7 17 17"></polyline>
             </svg>
@@ -134,76 +155,77 @@ const tabs = ['all', 'web', 'branding', 'mobile']
 </div>
 
 <script>
-  const tabButtons = document.querySelectorAll<HTMLButtonElement>('.tab-btn');
-  const portfolioItems = document.querySelectorAll<HTMLElement>('.portfolio-item');
+  const tabButtons = document.querySelectorAll<HTMLButtonElement>(".tab-btn");
+  const portfolioItems =
+    document.querySelectorAll<HTMLElement>(".portfolio-item");
 
-  tabButtons.forEach(button => {
-    button.addEventListener('click', () => {
-      const selectedTab = button.getAttribute('data-tab');
-      
+  tabButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const selectedTab = button.getAttribute("data-tab");
+
       // Update active tab styling
-      tabButtons.forEach(btn => {
-        btn.classList.remove('bg-black', 'text-white');
-        btn.classList.add('bg-white', 'text-black');
+      tabButtons.forEach((btn) => {
+        btn.classList.remove("bg-black", "text-white");
+        btn.classList.add("bg-white", "text-black");
       });
-      button.classList.remove('bg-white', 'text-black');
-      button.classList.add('bg-black', 'text-white');
+      button.classList.remove("bg-white", "text-black");
+      button.classList.add("bg-black", "text-white");
 
       // Filter portfolio items
-      portfolioItems.forEach(item => {
-        const category = item.getAttribute('data-category');
-        if (selectedTab === 'all' || category === selectedTab) {
-          item.style.display = 'flex';
+      portfolioItems.forEach((item) => {
+        const category = item.getAttribute("data-category");
+        if (selectedTab === "all" || category === selectedTab) {
+          item.style.display = "flex";
         } else {
-          item.style.display = 'none';
+          item.style.display = "none";
         }
       });
     });
   });
 
   // Modal functionality
-  const modal = document.getElementById('portfolio-modal');
-  const modalBackdrop = document.getElementById('modal-backdrop');
-  const modalClose = document.getElementById('modal-close');
-  const modalImage = document.getElementById('modal-image') as HTMLImageElement;
-  const modalName = document.getElementById('modal-name');
-  const modalDesc = document.getElementById('modal-desc');
-  const modalCategory = document.getElementById('modal-category');
-  const modalLink = document.getElementById('modal-link') as HTMLAnchorElement;
+  const modal = document.getElementById("portfolio-modal");
+  const modalBackdrop = document.getElementById("modal-backdrop");
+  const modalClose = document.getElementById("modal-close");
+  const modalImage = document.getElementById("modal-image") as HTMLImageElement;
+  const modalName = document.getElementById("modal-name");
+  const modalDesc = document.getElementById("modal-desc");
+  const modalCategory = document.getElementById("modal-category");
+  const modalLink = document.getElementById("modal-link") as HTMLAnchorElement;
 
   function openModal(item: HTMLElement) {
-    const name = item.getAttribute('data-name');
-    const desc = item.getAttribute('data-desc');
-    const cover = item.getAttribute('data-cover');
-    const category = item.getAttribute('data-category');
-    const link = item.getAttribute('data-link');
+    const name = item.getAttribute("data-name");
+    const desc = item.getAttribute("data-desc");
+    const cover = item.getAttribute("data-cover");
+    const category = item.getAttribute("data-category");
+    const link = item.getAttribute("data-link");
 
-    if (modalImage) modalImage.src = cover || '';
+    if (modalImage) modalImage.src = cover || "";
     if (modalName) modalName.textContent = name;
     if (modalDesc) modalDesc.textContent = desc;
     if (modalCategory) modalCategory.textContent = category;
-    if (modalLink) modalLink.href = link || '#';
+    if (modalLink) modalLink.href = link || "#";
 
-    modal?.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
+    modal?.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
   }
 
   function closeModal() {
-    modal?.classList.add('hidden');
-    document.body.style.overflow = '';
+    modal?.classList.add("hidden");
+    document.body.style.overflow = "";
   }
 
-  portfolioItems.forEach(item => {
-    item.addEventListener('click', (e) => {
+  portfolioItems.forEach((item) => {
+    item.addEventListener("click", (e) => {
       e.preventDefault();
       openModal(item);
     });
   });
 
-  modalBackdrop?.addEventListener('click', closeModal);
-  modalClose?.addEventListener('click', closeModal);
+  modalBackdrop?.addEventListener("click", closeModal);
+  modalClose?.addEventListener("click", closeModal);
 
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeModal();
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeModal();
   });
 </script>
