@@ -79,6 +79,29 @@ const renderedPortfolio = await Promise.all(
       ))
     }
   </div>
+
+  <!-- Pagination -->
+  <div class="flex justify-center items-center gap-2" id="pagination">
+    <button
+      id="prev-page"
+      class="px-4 py-2 rounded-full border-2 border-black font-medium transition-all duration-200 hover:bg-black hover:text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-black"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"></polyline>
+      </svg>
+    </button>
+    <div id="page-numbers" class="flex gap-1">
+      <!-- Page numbers will be generated dynamically -->
+    </div>
+    <button
+      id="next-page"
+      class="px-4 py-2 rounded-full border-2 border-black font-medium transition-all duration-200 hover:bg-black hover:text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-black"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"></polyline>
+      </svg>
+    </button>
+  </div>
 </section>
 
 <!-- Hidden content containers for each portfolio item -->
@@ -100,8 +123,9 @@ const renderedPortfolio = await Promise.all(
   </div>
 
   <!-- Modal Content -->
-  <div class="absolute inset-0 flex items-center justify-center p-4">
+  <div id="modal-overlay" class="absolute inset-0 flex items-center justify-center p-4">
     <div
+      id="modal-content-wrapper"
       class="relative bg-white max-w-6xl w-full max-h-[90vh] overflow-y-auto rounded-lg shadow-2xl"
     >
       <!-- Close Button -->
@@ -241,13 +265,78 @@ const renderedPortfolio = await Promise.all(
 </div>
 
 <script>
+  const ITEMS_PER_PAGE = 8;
+  let currentPage = 1;
+  let currentTab = "all";
+
   const tabButtons = document.querySelectorAll<HTMLButtonElement>(".tab-btn");
   const portfolioItems =
     document.querySelectorAll<HTMLElement>(".portfolio-item");
+  const prevPageBtn = document.getElementById("prev-page") as HTMLButtonElement;
+  const nextPageBtn = document.getElementById("next-page") as HTMLButtonElement;
+  const pageNumbersContainer = document.getElementById("page-numbers");
 
+  function getFilteredItems(): HTMLElement[] {
+    return Array.from(portfolioItems).filter((item) => {
+      const category = item.getAttribute("data-category");
+      return currentTab === "all" || category === currentTab;
+    });
+  }
+
+  function getTotalPages(): number {
+    const filteredItems = getFilteredItems();
+    return Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
+  }
+
+  function updatePagination() {
+    const totalPages = getTotalPages();
+    const filteredItems = getFilteredItems();
+
+    // Hide all items first
+    portfolioItems.forEach((item) => {
+      item.style.display = "none";
+    });
+
+    // Show only items for current page
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    
+    filteredItems.slice(startIndex, endIndex).forEach((item) => {
+      item.style.display = "flex";
+    });
+
+    // Update page numbers
+    if (pageNumbersContainer) {
+      pageNumbersContainer.innerHTML = "";
+      for (let i = 1; i <= totalPages; i++) {
+        const pageBtn = document.createElement("button");
+        pageBtn.textContent = String(i);
+        pageBtn.className = `w-10 h-10 rounded-full border-2 border-black font-medium transition-all duration-200 hover:bg-black hover:text-white ${
+          i === currentPage ? "bg-black text-white" : "bg-white text-black"
+        }`;
+        pageBtn.addEventListener("click", () => {
+          currentPage = i;
+          updatePagination();
+        });
+        pageNumbersContainer.appendChild(pageBtn);
+      }
+    }
+
+    // Update prev/next buttons
+    if (prevPageBtn) {
+      prevPageBtn.disabled = currentPage === 1;
+    }
+    if (nextPageBtn) {
+      nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
+    }
+  }
+
+  // Tab click handler
   tabButtons.forEach((button) => {
     button.addEventListener("click", () => {
       const selectedTab = button.getAttribute("data-tab");
+      currentTab = selectedTab || "all";
+      currentPage = 1; // Reset to first page when changing tabs
 
       // Update active tab styling
       tabButtons.forEach((btn) => {
@@ -257,17 +346,27 @@ const renderedPortfolio = await Promise.all(
       button.classList.remove("bg-white", "text-black");
       button.classList.add("bg-black", "text-white");
 
-      // Filter portfolio items
-      portfolioItems.forEach((item) => {
-        const category = item.getAttribute("data-category");
-        if (selectedTab === "all" || category === selectedTab) {
-          item.style.display = "flex";
-        } else {
-          item.style.display = "none";
-        }
-      });
+      updatePagination();
     });
   });
+
+  // Prev/Next button handlers
+  prevPageBtn?.addEventListener("click", () => {
+    if (currentPage > 1) {
+      currentPage--;
+      updatePagination();
+    }
+  });
+
+  nextPageBtn?.addEventListener("click", () => {
+    if (currentPage < getTotalPages()) {
+      currentPage++;
+      updatePagination();
+    }
+  });
+
+  // Initialize pagination
+  updatePagination();
 
   // Modal functionality
   const modal = document.getElementById("portfolio-modal");
@@ -393,6 +492,17 @@ const renderedPortfolio = await Promise.all(
 
   modalBackdrop?.addEventListener("click", closeModal);
   modalClose?.addEventListener("click", closeModal);
+
+  // Close modal when clicking outside the modal content
+  const modalOverlay = document.getElementById("modal-overlay");
+  const modalContentWrapper = document.getElementById("modal-content-wrapper");
+  
+  modalOverlay?.addEventListener("click", (e) => {
+    // Only close if clicking directly on the overlay, not on modal content
+    if (e.target === modalOverlay) {
+      closeModal();
+    }
+  });
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeModal();
