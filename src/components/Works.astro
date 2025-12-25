@@ -149,6 +149,43 @@ import { portfolio, tabs } from "../data/portfolio";
             </svg>
           </a>
         </div>
+
+        <!-- Ask LLM Section -->
+        <div class="pt-4 border-t border-gray-200 space-y-4">
+          <h3 class="text-xl font-semibold flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 8V4H8"></path>
+              <rect width="16" height="12" x="4" y="8" rx="2"></rect>
+              <path d="M2 14h2"></path>
+              <path d="M20 14h2"></path>
+              <path d="M15 13v2"></path>
+              <path d="M9 13v2"></path>
+            </svg>
+            Ask AI about this project
+          </h3>
+          <div class="flex gap-2">
+            <input 
+              type="text" 
+              id="llm-prompt" 
+              placeholder="Ask anything about this project..."
+              class="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
+            />
+            <button 
+              id="llm-submit"
+              class="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span id="llm-btn-text">Ask</span>
+              <svg id="llm-spinner" class="hidden animate-spin" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+              </svg>
+            </button>
+          </div>
+          <div id="llm-response" class="hidden p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <p class="text-sm text-gray-500 mb-2">AI Response:</p>
+            <p id="llm-response-text" class="text-gray-700 whitespace-pre-wrap"></p>
+          </div>
+          <p id="llm-error" class="hidden text-red-500 text-sm"></p>
+        </div>
       </div>
     </div>
   </div>
@@ -193,12 +230,97 @@ import { portfolio, tabs } from "../data/portfolio";
   const modalCategory = document.getElementById("modal-category");
   const modalLink = document.getElementById("modal-link") as HTMLAnchorElement;
 
+  // LLM elements
+  const llmPrompt = document.getElementById("llm-prompt") as HTMLInputElement;
+  const llmSubmit = document.getElementById("llm-submit") as HTMLButtonElement;
+  const llmResponse = document.getElementById("llm-response");
+  const llmResponseText = document.getElementById("llm-response-text");
+  const llmError = document.getElementById("llm-error");
+  const llmSpinner = document.getElementById("llm-spinner");
+  const llmBtnText = document.getElementById("llm-btn-text");
+
+  let currentProjectContext = {
+    name: "",
+    desc: "",
+    category: ""
+  };
+
+  async function askLLM(prompt: string) {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt,
+        projectName: currentProjectContext.name,
+        projectDesc: currentProjectContext.desc,
+        projectCategory: currentProjectContext.category
+      })
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to get response");
+    }
+
+    return data.response;
+  }
+
+  llmSubmit?.addEventListener("click", async () => {
+    const prompt = llmPrompt?.value.trim();
+    if (!prompt) return;
+
+    // Show loading state
+    if (llmSpinner) llmSpinner.classList.remove("hidden");
+    if (llmBtnText) llmBtnText.textContent = "Thinking...";
+    if (llmSubmit) llmSubmit.disabled = true;
+    if (llmError) llmError.classList.add("hidden");
+    if (llmResponse) llmResponse.classList.add("hidden");
+
+    try {
+      const response = await askLLM(prompt);
+      if (llmResponseText) llmResponseText.textContent = response;
+      if (llmResponse) llmResponse.classList.remove("hidden");
+    } catch (error) {
+      if (llmError) {
+        llmError.textContent = error instanceof Error ? error.message : "An error occurred";
+        llmError.classList.remove("hidden");
+      }
+    } finally {
+      // Reset button state
+      if (llmSpinner) llmSpinner.classList.add("hidden");
+      if (llmBtnText) llmBtnText.textContent = "Ask";
+      if (llmSubmit) llmSubmit.disabled = false;
+    }
+  });
+
+  // Allow Enter key to submit
+  llmPrompt?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      llmSubmit?.click();
+    }
+  });
+
   function openModal(item: HTMLElement) {
     const name = item.getAttribute("data-name");
     const desc = item.getAttribute("data-desc");
     const cover = item.getAttribute("data-cover");
     const category = item.getAttribute("data-category");
     const link = item.getAttribute("data-link");
+
+    // Update project context for LLM
+    currentProjectContext = {
+      name: name || "",
+      desc: desc || "",
+      category: category || ""
+    };
+
+    // Reset LLM state
+    if (llmPrompt) llmPrompt.value = "";
+    if (llmResponse) llmResponse.classList.add("hidden");
+    if (llmError) llmError.classList.add("hidden");
 
     if (modalImage) modalImage.src = cover || "";
     if (modalName) modalName.textContent = name;
