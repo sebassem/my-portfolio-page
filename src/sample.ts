@@ -11,7 +11,7 @@ const author = {
 
 const buy = {
     title: `See on Github`,
-    link: `https://github.com/anthonylan/angie`
+    link: `https://github.com/anthonylan/Seif`
 }
 
 
