@@ -1,9 +1,27 @@
 ---
 import Bars from "./Bars.astro";
+import { getCollection, render, type CollectionEntry } from "astro:content";
 
 import svgUnderline from "../assets/underline.svg";
 import arrowCard from "../assets/arrow-card.svg";
-import { portfolio, tabs } from "../data/portfolio";
+
+type PortfolioEntry = CollectionEntry<"portfolio">;
+
+// Get portfolio items from content collection
+const portfolioEntries: PortfolioEntry[] = await getCollection("portfolio");
+const portfolio = portfolioEntries.sort((a, b) => (a.data.order || 99) - (b.data.order || 99));
+
+// Get unique categories for tabs
+const categories = [...new Set(portfolio.map((p) => p.data.category))];
+const tabs = ["all", ...categories];
+
+// Render all portfolio content
+const renderedPortfolio = await Promise.all(
+  portfolio.map(async (entry) => {
+    const { Content } = await render(entry);
+    return { entry, Content };
+  })
+);
 ---
 
 <section class="py-25 space-y-10 px-5" id="work">
@@ -35,26 +53,26 @@ import { portfolio, tabs } from "../data/portfolio";
     id="portfolio-grid"
   >
     {
-      portfolio.map((item, index) => (
+      portfolio.map((entry, index) => (
         <a
           href="#"
-          data-category={item.category}
+          data-category={entry.data.category}
           data-index={index}
-          data-name={item.name}
-          data-desc={item.desc}
-          data-cover={item.cover}
-          data-link={item.link}
+          data-name={entry.data.name}
+          data-slug={entry.id}
+          data-cover={entry.data.cover}
+          data-link={entry.data.link}
           class="portfolio-item w-[calc(50%-12px)] md:w-[calc(25%-18px)] flex flex-col bg-white p-5 group relative transition-all duration-200 hover:shadow-[4px_4px_0px_rgba(0,0,0,0.3)]"
         >
           <div class="w-full h-[200px] overflow-hidden border-2">
-            <img src={item.cover} alt="" class="w-full h-full object-cover" />
+            <img src={entry.data.cover} alt="" class="w-full h-full object-cover" />
           </div>
           <div class="space-y-1 pt-4">
             <div class="flex pr-2">
-              <h2 class="text-xl font-medium flex-1">{item.name}</h2>
+              <h2 class="text-xl font-medium flex-1">{entry.data.name}</h2>
               <img src={arrowCard.src} alt="arrow" width="25" />
             </div>
-            <p class="mr-20">{item.desc}</p>
+            <p class="mr-20 text-gray-600 text-sm">{entry.data.category}</p>
           </div>
           <Bars />
         </a>
@@ -62,6 +80,15 @@ import { portfolio, tabs } from "../data/portfolio";
     }
   </div>
 </section>
+
+<!-- Hidden content containers for each portfolio item -->
+{
+  renderedPortfolio.map(({ entry, Content }) => (
+    <div id={`content-${entry.id}`} class="hidden prose prose-gray max-w-none">
+      <Content />
+    </div>
+  ))
+}
 
 <!-- Modal -->
 <div id="portfolio-modal" class="fixed inset-0 z-50 hidden">
@@ -75,7 +102,7 @@ import { portfolio, tabs } from "../data/portfolio";
   <!-- Modal Content -->
   <div class="absolute inset-0 flex items-center justify-center p-4">
     <div
-      class="relative bg-white max-w-4xl w-full max-h-[90vh] overflow-y-auto rounded-lg shadow-2xl"
+      class="relative bg-white max-w-6xl w-full max-h-[90vh] overflow-y-auto rounded-lg shadow-2xl"
     >
       <!-- Close Button -->
       <button
@@ -115,16 +142,14 @@ import { portfolio, tabs } from "../data/portfolio";
           class="inline-block px-4 py-1 bg-black text-white text-sm font-medium rounded-full capitalize"
         ></span>
         <h2 id="modal-name" class="text-3xl font-bold"></h2>
-        <p id="modal-desc" class="text-gray-600 text-lg"></p>
+        
+        <!-- Rich content from markdown -->
+        <div id="modal-content" class="prose prose-gray max-w-none pt-4 border-t border-gray-200">
+          <!-- Content will be injected here -->
+        </div>
 
-        <!-- Placeholder content for MVP -->
-        <div class="pt-4 border-t border-gray-200 space-y-4">
-          <h3 class="text-xl font-semibold">Project Details</h3>
-          <p class="text-gray-600">
-            This is where you can add more detailed information about the
-            project, including the client, timeline, technologies used, and your
-            role in the project.
-          </p>
+        <!-- Project link -->
+        <div class="pt-4 border-t border-gray-200">
           <a
             id="modal-link"
             href="#"
@@ -250,8 +275,8 @@ import { portfolio, tabs } from "../data/portfolio";
   const modalClose = document.getElementById("modal-close");
   const modalImage = document.getElementById("modal-image") as HTMLImageElement;
   const modalName = document.getElementById("modal-name");
-  const modalDesc = document.getElementById("modal-desc");
   const modalCategory = document.getElementById("modal-category");
+  const modalContent = document.getElementById("modal-content");
   const modalLink = document.getElementById("modal-link") as HTMLAnchorElement;
 
   // LLM elements
@@ -327,7 +352,7 @@ import { portfolio, tabs } from "../data/portfolio";
 
   function openModal(item: HTMLElement) {
     const name = item.getAttribute("data-name");
-    const desc = item.getAttribute("data-desc");
+    const slug = item.getAttribute("data-slug");
     const cover = item.getAttribute("data-cover");
     const category = item.getAttribute("data-category");
     const link = item.getAttribute("data-link");
@@ -339,9 +364,16 @@ import { portfolio, tabs } from "../data/portfolio";
 
     if (modalImage) modalImage.src = cover || "";
     if (modalName) modalName.textContent = name;
-    if (modalDesc) modalDesc.textContent = desc;
     if (modalCategory) modalCategory.textContent = category;
     if (modalLink) modalLink.href = link || "#";
+
+    // Load rich content from hidden container
+    if (modalContent && slug) {
+      const contentSource = document.getElementById(`content-${slug}`);
+      if (contentSource) {
+        modalContent.innerHTML = contentSource.innerHTML;
+      }
+    }
 
     modal?.classList.remove("hidden");
     document.body.style.overflow = "hidden";
