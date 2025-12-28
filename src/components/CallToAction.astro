@@ -24,6 +24,7 @@ import svgHl from "../assets/hl.svg";
         <div class="relative group">
           <button
             id="ask-ai-btn"
+            disabled
             class="bg-[var(--blue)] text-black text-md font-medium flex items-center h-12 px-6 border-3 rounded-full cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Ask AI
@@ -52,7 +53,7 @@ import svgHl from "../assets/hl.svg";
 </section>
 
 <script>
-  import { askAI } from "../services/aiService";
+  import { askAI, onTextboxFocus } from "../services/aiService";
 
   const askAiBtn = document.getElementById("ask-ai-btn");
   const aiQuestion = document.getElementById(
@@ -60,6 +61,25 @@ import svgHl from "../assets/hl.svg";
   ) as HTMLTextAreaElement;
   const aiResponse = document.getElementById("ai-response");
   const aiResponseText = document.getElementById("ai-response-text");
+
+  // Handle textbox focus event
+  aiQuestion?.addEventListener("focus", async () => {
+    try {
+      await onTextboxFocus();
+    } catch (error) {
+      console.error("Error on textbox focus:", error);
+    }
+  });
+
+  // Enable/disable button based on textbox content
+  aiQuestion?.addEventListener("input", () => {
+    const hasText = aiQuestion.value.trim().length > 0;
+    if (hasText) {
+      askAiBtn?.removeAttribute("disabled");
+    } else {
+      askAiBtn?.setAttribute("disabled", "true");
+    }
+  });
 
   askAiBtn?.addEventListener("click", async () => {
     const question = aiQuestion?.value?.trim();
