@@ -1,18 +1,97 @@
 ---
-import svgPinkStar from '../assets/pink-star.svg'
-import Button from './Button.astro'
-import { buy } from '../sample'
-
+import svgPinkStar from "../assets/pink-star.svg";
+import svgHl from "../assets/hl.svg";
 ---
 
-
 <section class="px-3" id="hire">
-    <div class="max-w-3xl mx-auto bg-white text-center flex flex-col gap-4 border-3 shadow-[8px_8px_0px_rgba(0,0,0,0.3)]  relative p-10">
-     <h1 class="text-3xl">Let’s start designing your project</h1>
-     <p class="text-lg max-w-lg mx-auto">Want to see how to transform your brand into a unique style. send me a message</p>
-     <div class="flex justify-center">
-       <Button text={buy.title} link={buy.link} target="_blank" />
-     </div>
-     <img src={svgPinkStar.src} alt="svg" width="80" class="absolute -top-10 right-20" />
+  <div
+    class="max-w-3xl mx-auto bg-white text-center flex flex-col gap-4 border-3 shadow-[8px_8px_0px_rgba(0,0,0,0.3)] relative p-10"
+  >
+    <h1 class="text-3xl">
+      Ask an AI assistant to help you understand how Seif would help
+    </h1>
+    <p class="text-lg max-w-lg mx-auto">
+      Have a question? Ask our AI assistant about Seif's expertise and how he
+      can help with your project.
+    </p>
+    <div class="flex flex-col gap-4 w-full max-w-lg mx-auto">
+      <textarea
+        id="ai-question"
+        class="w-full p-3 border-2 border-black rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-pink-400"
+        rows="3"
+        placeholder="Type your question here..."></textarea>
+      <div class="flex justify-center">
+        <div class="relative group">
+          <button
+            id="ask-ai-btn"
+            class="bg-[var(--blue)] text-black text-md font-medium flex items-center h-12 px-6 border-3 rounded-full cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Ask AI
+          </button>
+          <img
+            src={svgHl.src}
+            width="30"
+            class="absolute -right-7 -bottom-3 transition-all duration-200 group-hover:-bottom-4"
+          />
+        </div>
+      </div>
+      <div
+        id="ai-response"
+        class="hidden mt-4 p-4 bg-gray-100 rounded-lg text-left"
+      >
+        <p id="ai-response-text" class="text-gray-800"></p>
+      </div>
     </div>
-  </section>
+    <img
+      src={svgPinkStar.src}
+      alt="svg"
+      width="80"
+      class="absolute -top-10 right-20"
+    />
+  </div>
+</section>
+
+<script>
+  import { askAI } from "../services/aiService";
+
+  const askAiBtn = document.getElementById("ask-ai-btn");
+  const aiQuestion = document.getElementById(
+    "ai-question"
+  ) as HTMLTextAreaElement;
+  const aiResponse = document.getElementById("ai-response");
+  const aiResponseText = document.getElementById("ai-response-text");
+
+  askAiBtn?.addEventListener("click", async () => {
+    const question = aiQuestion?.value?.trim();
+
+    if (!question) {
+      alert("Please enter a question");
+      return;
+    }
+
+    // Disable button and show loading state
+    askAiBtn.textContent = "Asking...";
+    askAiBtn.setAttribute("disabled", "true");
+
+    try {
+      const data = await askAI(question);
+
+      // Show response
+      if (aiResponse && aiResponseText) {
+        aiResponse.classList.remove("hidden");
+        aiResponseText.textContent =
+          data.answer || data.message || "No response received";
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      if (aiResponse && aiResponseText) {
+        aiResponse.classList.remove("hidden");
+        aiResponseText.textContent = "An error occurred. Please try again.";
+      }
+    } finally {
+      // Reset button state
+      askAiBtn.textContent = "Ask AI";
+      askAiBtn.removeAttribute("disabled");
+    }
+  });
+</script>

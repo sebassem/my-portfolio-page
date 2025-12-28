@@ -10,8 +10,8 @@ const author = {
 
 
 const buy = {
-    title: `See on Github`,
-    link: `https://github.com/anthonylan/Seif`
+    title: `Ask AI`,
+    link: `#`
 }
 
 
