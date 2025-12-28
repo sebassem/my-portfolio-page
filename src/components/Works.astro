@@ -11,8 +11,8 @@ type PortfolioEntry = CollectionEntry<"portfolio">;
 const portfolioEntries: PortfolioEntry[] = await getCollection("portfolio");
 const portfolio = portfolioEntries.sort((a, b) => (a.data.order || 99) - (b.data.order || 99));
 
-// Get unique categories for tabs
-const categories = [...new Set(portfolio.map((p) => p.data.category))];
+// Get unique categories for tabs (flatten arrays and dedupe)
+const categories = [...new Set(portfolio.flatMap((p) => p.data.category))];
 const tabs = ["all", ...categories];
 
 // Render all portfolio content
@@ -56,7 +56,7 @@ const renderedPortfolio = await Promise.all(
       portfolio.map((entry, index) => (
         <a
           href="#"
-          data-category={entry.data.category}
+          data-category={JSON.stringify(entry.data.category)}
           data-index={index}
           data-name={entry.data.name}
           data-slug={entry.id}
@@ -72,7 +72,7 @@ const renderedPortfolio = await Promise.all(
               <h2 class="text-xl font-medium flex-1">{entry.data.name}</h2>
               <img src={arrowCard.src} alt="arrow" width="25" />
             </div>
-            <p class="mr-20 text-gray-600 text-sm">{entry.data.category}</p>
+            <p class="mr-20 text-gray-600 text-sm">{entry.data.category.join(", ")}</p>
           </div>
           <Bars />
         </a>
@@ -149,16 +149,6 @@ const renderedPortfolio = await Promise.all(
         </svg>
       </button>
 
-      <!-- Image -->
-      <div class="w-full h-[300px] md:h-[400px] overflow-hidden">
-        <img
-          id="modal-image"
-          src=""
-          alt=""
-          class="w-full h-full object-cover"
-        />
-      </div>
-
       <!-- Info -->
       <div class="p-8 space-y-4">
         <span
@@ -166,7 +156,6 @@ const renderedPortfolio = await Promise.all(
           class="inline-block px-4 py-1 bg-black text-white text-sm font-medium rounded-full capitalize"
         ></span>
         <h2 id="modal-name" class="text-3xl font-bold"></h2>
-        
         <!-- Rich content from markdown -->
         <div id="modal-content" class="prose prose-gray max-w-none pt-4 border-t border-gray-200">
           <!-- Content will be injected here -->
@@ -199,7 +188,7 @@ const renderedPortfolio = await Promise.all(
           </a>
         </div>
 
-        <!-- Ask LLM Section -->
+        <!-- Ask LLM Section - Commented out for now
         <div class="pt-4 border-t border-gray-200 space-y-4">
           <h3 class="text-xl font-semibold flex items-center gap-2">
             <svg
@@ -259,6 +248,7 @@ const renderedPortfolio = await Promise.all(
           </div>
           <p id="llm-error" class="hidden text-red-500 text-sm"></p>
         </div>
+        -->
       </div>
     </div>
   </div>
@@ -278,8 +268,9 @@ const renderedPortfolio = await Promise.all(
 
   function getFilteredItems(): HTMLElement[] {
     return Array.from(portfolioItems).filter((item) => {
-      const category = item.getAttribute("data-category");
-      return currentTab === "all" || category === currentTab;
+      const categoryAttr = item.getAttribute("data-category");
+      const categories: string[] = categoryAttr ? JSON.parse(categoryAttr) : [];
+      return currentTab === "all" || categories.includes(currentTab);
     });
   }
 
@@ -372,13 +363,12 @@ const renderedPortfolio = await Promise.all(
   const modal = document.getElementById("portfolio-modal");
   const modalBackdrop = document.getElementById("modal-backdrop");
   const modalClose = document.getElementById("modal-close");
-  const modalImage = document.getElementById("modal-image") as HTMLImageElement;
   const modalName = document.getElementById("modal-name");
   const modalCategory = document.getElementById("modal-category");
   const modalContent = document.getElementById("modal-content");
   const modalLink = document.getElementById("modal-link") as HTMLAnchorElement;
 
-  // LLM elements
+  /* LLM elements - Commented out for now
   const llmPrompt = document.getElementById("llm-prompt") as HTMLInputElement;
   const llmSubmit = document.getElementById("llm-submit") as HTMLButtonElement;
   const llmResponse = document.getElementById("llm-response");
@@ -448,22 +438,24 @@ const renderedPortfolio = await Promise.all(
       llmSubmit?.click();
     }
   });
+  */
 
   function openModal(item: HTMLElement) {
     const name = item.getAttribute("data-name");
     const slug = item.getAttribute("data-slug");
     const cover = item.getAttribute("data-cover");
-    const category = item.getAttribute("data-category");
+    const categoryAttr = item.getAttribute("data-category");
+    const categories: string[] = categoryAttr ? JSON.parse(categoryAttr) : [];
     const link = item.getAttribute("data-link");
 
-    // Reset AI chat state
+    /* Reset AI chat state - Commented out for now
     if (llmPrompt) llmPrompt.value = "";
     if (llmResponse) llmResponse.classList.add("hidden");
     if (llmError) llmError.classList.add("hidden");
+    */
 
-    if (modalImage) modalImage.src = cover || "";
     if (modalName) modalName.textContent = name;
-    if (modalCategory) modalCategory.textContent = category;
+    if (modalCategory) modalCategory.textContent = categories.join(", ");
     if (modalLink) modalLink.href = link || "#";
 
     // Load rich content from hidden container

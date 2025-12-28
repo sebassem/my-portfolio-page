@@ -1,22 +1,22 @@
 ---
 name: "Azure Landing Zones - Core Maintainer"
-category: "web"
+category: ["Open Source", "Architecture"]
 cover: "https://images.pexels.com/photos/1181467/pexels-photo-1181467.jpeg?auto=compress&cs=tinysrgb&w=1600"
 link: "https://github.com/Azure/ALZ-Bicep"
-order: 4
+order: 6
 featured: true
 ---
 
 ## Project Overview
 
-Core maintainer for Azure Landing Zones (ALZ), driving faster adoption of new Azure capabilities and accelerating feature delivery.
+Core maintainer for Azure Landing Zones (ALZ) and leading the **feature alignment workstream** to track, prioritize, and implement new Azure features across the different ALZ workstreams.
 
 ### Key Achievements
 
-- **Reduced Delivery Cycles** - Cut feature delivery from quarters to weeks
-- **Feature Releases** - Led the release of ~12 new features
+- **Accelerated Delivery Velocity** - Cut feature intake and release cycle from quarters to weeks
+- **~12 Features Released** - Led the release of approximately 12 new features and capabilities (new and replaced deprecated ones)
+- **Improved Cross-Team Collaboration** - Enhanced coordination between ALZ workstreams and Azure product teams
 - **Faster Azure Adoption** - Enabled customers to leverage new Azure capabilities sooner
-- **Community Engagement** - Active collaboration with the Azure community
 
 ### Impact Metrics
 
@@ -24,6 +24,16 @@ Core maintainer for Azure Landing Zones (ALZ), driving faster adoption of new Az
 |--------|-------|
 | New Features Released | ~12 |
 | Delivery Cycle Improvement | Quarters → Weeks |
+| Workstreams Coordinated | Multiple |
+
+### Feature Alignment Workstream
+
+As the lead for the feature alignment workstream, responsibilities include:
+
+- **Tracking** - Monitoring new Azure feature announcements
+- **Prioritization** - Assessing impact and urgency of new capabilities
+- **Implementation** - Coordinating development across ALZ workstreams
+- **Deprecation** - Managing the lifecycle of features being replaced
 
 ### Responsibilities
 

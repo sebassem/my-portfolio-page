@@ -1,6 +1,6 @@
 ---
 name: "Cloud Adoption Framework Documentation"
-category: "branding"
+category: ["Content"]
 cover: "https://images.pexels.com/photos/5989925/pexels-photo-5989925.jpeg?auto=compress&cs=tinysrgb&w=1600"
 link: "https://learn.microsoft.com/azure/cloud-adoption-framework/"
 order: 7

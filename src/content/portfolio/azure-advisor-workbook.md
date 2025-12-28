@@ -1,6 +1,6 @@
 ---
 name: "Azure Advisor Cost Optimization Workbook"
-category: "branding"
+category: ["Open Source", "Content"]
 cover: "https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=1600"
 link: "https://learn.microsoft.com/azure/advisor/advisor-cost-optimization-workbook"
 order: 6

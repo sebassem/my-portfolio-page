@@ -1,37 +1,43 @@
 ---
 name: "Microsoft Ignite 2024 - AI Workshop"
-category: "web"
+category: ["Speaking", "AI"]
 cover: "https://images.pexels.com/photos/2774556/pexels-photo-2774556.jpeg?auto=compress&cs=tinysrgb&w=1600"
 link: "https://ignite.microsoft.com"
-order: 3
+order: 5
 featured: true
 ---
 
 ## Project Overview
 
-At Microsoft Ignite 2024, delivered a pre-day hands-on workshop as part of a v-team focused on next-generation industrial transformation architecture patterns.
+At Microsoft Ignite 2024, led a hands-on pre-day workshop titled **"Explore Next-Gen Industrial Transformation Architecture Patterns"**, teaching attendees how to build next-generation AI solution architectures for manufacturing using the Azure AI platform.
 
 ### Workshop Details
 
 **Title:** Explore Next-Gen Industrial Transformation Architecture Patterns
 
+**Focus:** Building AI solution architectures for manufacturing using Azure services and Kubernetes across edge-to-cloud environments.
+
 ### Key Topics Covered
 
-- **Azure AI Platform** - Deep dive into Azure's AI capabilities
+- **Azure AI Platform** - Deep dive into Azure's AI capabilities for industrial scenarios
 - **Edge-to-Cloud Architecture** - Building solutions that span from edge devices to cloud
-- **Manufacturing Use Cases** - Real-world scenarios for industrial transformation
-- **Hands-on Labs** - Practical exercises for attendees
+- **Manufacturing Use Cases** - Real-world patterns for industrial transformation
+- **Kubernetes Integration** - Leveraging K8s for edge and cloud workloads
+- **Hands-on Labs** - Practical exercises building complete solutions
 
-### Impact
+### What Attendees Learned
 
-- Educated audience on building next-gen AI solution architectures
-- Demonstrated edge-to-cloud patterns for manufacturing
-- Provided hands-on experience with Azure AI platform
+- How to architect AI solutions for manufacturing environments
+- Edge computing patterns for industrial IoT
+- Integrating Azure AI services with Kubernetes
+- Best practices for cloud-to-edge deployments
+- Real-time data processing and analytics
 
 ### Technologies Demonstrated
 
-- Azure IoT Hub
+- Azure OpenAI Service
 - Azure AI Services
-- Azure Arc
+- Azure Arc-enabled Kubernetes
+- Azure IoT Hub
 - Azure Machine Learning
-- Azure Digital Twins
+- Kubernetes (AKS, AKS Edge Essentials)
