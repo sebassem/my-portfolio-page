@@ -36,7 +36,7 @@ async def main():
     workflow = SequentialBuilder().participants([classification_agent, test_agent]).build()
 
     result = await workflow.run("how can he help in managing a kubernetes cluster.")
-    
+
     # Get all output messages
     outputs = result.get_outputs()
     for messages in outputs:
@@ -44,7 +44,7 @@ async def main():
             print(f"Role: {message.role}")
             print(f"Text: {message.text}")
             print("---")
-    
+
     # Output just the last message
     print("\n=== Final Output ===")
     print(outputs[0][-1].text)
