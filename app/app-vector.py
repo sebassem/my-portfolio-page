@@ -39,8 +39,8 @@ llm = AzureChatOpenAI(
 
 # RAG prompt template
 rag_prompt = ChatPromptTemplate.from_messages([
-    ("system", """You are a helpful assistant that answers questions based on the provided context. 
-Use only the information from the context to answer the question. 
+    ("system", """You are a helpful assistant that answers questions based on the provided context.
+Use only the information from the context to answer the question.
 If the context doesn't contain relevant information, say "I don't have enough information to answer that question."
 
 Context:

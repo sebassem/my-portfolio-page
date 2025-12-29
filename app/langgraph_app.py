@@ -26,7 +26,7 @@ token_provider = get_bearer_token_provider(credential, "https://cognitiveservice
 
 client = AzureChatOpenAI(
     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-    azure_deployment=os.getenv("AZURE_DEPLOYMENT_NAME"),
+    azure_deployment=os.getenv("AZURE_OPENAI_RESPONSES_DEPLOYMENT_NAME"),
     azure_ad_token_provider=token_provider,
     api_version="2024-08-01-preview",
 )
@@ -34,35 +34,35 @@ client = AzureChatOpenAI(
 # Define the classification node
 def classification_agent(state: AgentState) -> AgentState:
     from langchain_core.messages import SystemMessage, HumanMessage
-    
+
     messages = [
         SystemMessage(content="""You are a prompt classification agent to help understand if a provided prompt is job or career related, specially in Technology. When provided a prompt, you will figure out if its a job description or related to a specific task in a job or career related.
 If it is, classify it as 'Job Description'. If not, classify it as 'General Prompt'. Respond only with the classification label."""),
         HumanMessage(content=state["input"])
     ]
-    
+
     response = client.invoke(messages)
-    
+
     # Parse the classification from the response content
     content = response.content.strip()
     if "Job Description" in content:
         classification = "Job Description"
     else:
         classification = "General Prompt"
-    
+
     return {"classification": classification}
 
 # Define the poem writing node
 def poem_agent(state: AgentState) -> AgentState:
     from langchain_core.messages import SystemMessage, HumanMessage
-    
+
     messages = [
         SystemMessage(content="You are an agent that writes a poem based on the provided classification."),
         HumanMessage(content=f"The input was: {state['input']}\nClassification: {state['classification']}\n\nWrite a short poem based on this.")
     ]
-    
+
     response = client.invoke(messages)
-    
+
     poem = response.content
     return {"poem": poem}
 
