@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Literal, TypedDict
 
 import yaml
-from azure.identity import AzureCliCredential, get_bearer_token_provider
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -62,7 +62,9 @@ class AgentState(TypedDict):
 # Azure Clients Configuration
 # =============================================================================
 
-credential = AzureCliCredential()
+# DefaultAzureCredential tries multiple auth methods in order:
+# Environment -> Workload Identity -> Managed Identity -> Azure CLI -> Azure PowerShell -> Azure Developer CLI
+credential = DefaultAzureCredential()
 
 # Token providers for Azure services
 openai_token_provider = get_bearer_token_provider(
