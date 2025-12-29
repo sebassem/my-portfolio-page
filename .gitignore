@@ -17,6 +17,9 @@ pnpm-debug.log*
 .env
 .env.production
 
+# System prompts (security sensitive)
+app/prompts.yaml
+
 # macOS-specific files
 .DS_Store
 

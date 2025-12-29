@@ -1,0 +1,18 @@
+# =============================================================================
+# System Prompts Configuration Template
+# =============================================================================
+# Copy this file to prompts.yaml and customize with your actual prompts.
+# DO NOT commit prompts.yaml to version control.
+
+classification_prompt: |
+  Your classification prompt goes here.
+  This prompt determines if user input is job-related or general.
+
+rag_system_prompt: |
+  Your RAG system prompt goes here.
+  This prompt guides the AI in using retrieved context to answer questions.
+
+  Context:
+  {context}
+
+rag_human_prompt: "{question}"

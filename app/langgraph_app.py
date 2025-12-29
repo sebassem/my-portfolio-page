@@ -8,7 +8,10 @@ This module implements a FastAPI service with a two-stage agent workflow:
 
 import os
 import random
+from pathlib import Path
 from typing import Literal, TypedDict
+
+import yaml
 from azure.identity import AzureCliCredential, get_bearer_token_provider
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
@@ -22,6 +25,26 @@ from langchain_openai import AzureChatOpenAI
 from langgraph.graph import StateGraph, START, END
 
 load_dotenv()
+
+
+# =============================================================================
+# Load Prompts from External Configuration
+# =============================================================================
+
+def load_prompts(prompts_path: str = None) -> dict:
+    """
+    Load prompts from external YAML file.
+    Path can be overridden via PROMPTS_FILE_PATH environment variable.
+    """
+    if prompts_path is None:
+        prompts_path = os.getenv("PROMPTS_FILE_PATH", Path(__file__).parent / "prompts.yaml")
+
+    with open(prompts_path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+# Load prompts at startup
+PROMPTS = load_prompts()
 
 
 # =============================================================================
@@ -69,60 +92,14 @@ retriever = AzureAISearchRetriever(
 
 
 # =============================================================================
-# Prompt Templates
+# Prompt Templates (loaded from external configuration)
 # =============================================================================
 
-CLASSIFICATION_SYSTEM_PROMPT = """You are a prompt classification agent to help understand if a provided prompt is job or career related, specially in Technology.
-When provided a prompt, you will figure out if its a job description or related to a specific task in a job or career related.
-If it is, classify it as 'Job Description'.
-## Example 1:
-The CSA role is a customer-facing, hands-on technical position responsible for:
-
-- Leading technical engagements across design, build, and operations.
-- Driving application innovation and AI transformation on Microsoft Azure and GitHub.
-- Removing technical blockers and accelerating adoption.
-- Engaging with senior executives, architects, engineers, and developers.
-- Collaborating internally and externally to deliver pilots and oversee implementations.
-
-### Responsibilities
-
-- Understand customer business and IT priorities for cloud, AI, and low-code solutions.
-- Act as the voice of the customer, providing feedback to engineering and accelerating solution delivery through reviews, PoCs, and environment setup.
-- Support customer skilling via workshops and readiness activities.
-- Drive cloud consumption growth and resolve adoption challenges.
-- Build strong customer/partner relationships and identify growth opportunities.
-- Stay current with Azure, AI, GitHub, and enterprise development languages (.NET, Python, Java, JavaScript/Node.js).
-- Share insights internally and externally through technical communities and events.
-
-
-### Qualifications
-
-- Bachelors degree in Computer Science, IT, Engineering, Business, or equivalent experience.
-- Strong background in cloud/infrastructure technologies, IT consulting, architecture, or software development.
-- Experience in customer-facing technical roles and projects.
-- Cloud certifications (Azure, AWS, Google) and security certifications.
-- Proficiency in enterprise-scale cloud/hybrid architectures and migrations.
-- Development experience in .NET, Java, JavaScript/Node.js, or Python.
-English required; Arabic is a plus.
-
-## Example 2:
-We are looking for a DevOps Engineer to join our dynamic team. The ideal candidate will have experience with CI/CD pipelines, cloud infrastructure, and automation tools. Responsibilities include managing cloud resources, implementing security best practices, and collaborating with development teams to streamline deployment processes. Proficiency in AWS, Docker, Kubernetes, and scripting languages is required.
-
-## Example 3:
-How can you help me with managing a large kubernetes environment?
-
-If not, classify it as 'General Prompt'.
-Respond only with the classification label."""
+CLASSIFICATION_SYSTEM_PROMPT = PROMPTS["classification_prompt"]
 
 RAG_PROMPT = ChatPromptTemplate.from_messages([
-    ("system", """You are a helpful assistant that retrieves relevant contributions and expertise based on the provided context.
-You will help the user understand why and how Seif can have a huge impact in their job or career.
-Use only the information from the context to answer the question.
-If the context doesn't contain relevant information, say "I don't have enough information to answer that question, better to reach out to Seif directly"
-
-Context:
-{context}"""),
-    ("human", "{question}")
+    ("system", PROMPTS["rag_system_prompt"]),
+    ("human", PROMPTS["rag_human_prompt"])
 ])
 
 
