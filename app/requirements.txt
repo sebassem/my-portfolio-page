@@ -6,5 +6,8 @@ langchain
 langchain-openai
 langchain-community
 langchain-core
+langgraph
 azure-identity
 azure-search-documents
+fastapi
+uvicorn[standard]
