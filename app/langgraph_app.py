@@ -9,7 +9,6 @@ This module implements a two-stage agent workflow:
 import os
 import asyncio
 from typing import Literal, TypedDict
-
 from azure.identity import AzureCliCredential, get_bearer_token_provider
 from dotenv import load_dotenv
 from langchain_community.retrievers import AzureAISearchRetriever
@@ -52,7 +51,7 @@ llm = AzureChatOpenAI(
     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
     azure_deployment=os.getenv("AZURE_OPENAI_RESPONSES_DEPLOYMENT_NAME"),
     azure_ad_token_provider=openai_token_provider,
-    api_version="2024-08-01-preview",
+    api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
 )
 
 # Azure AI Search retriever for RAG
