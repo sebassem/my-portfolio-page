@@ -3,14 +3,13 @@ import asyncio
 from azure.identity import AzureCliCredential, get_bearer_token_provider
 from langchain_openai import AzureChatOpenAI
 from langgraph.graph import StateGraph, START, END
-from pydantic import BaseModel
-from typing import Literal, TypedDict, Annotated
-from dotenv import load_dotenv
 from langchain_community.retrievers import AzureAISearchRetriever
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-
+from pydantic import BaseModel
+from typing import Literal, TypedDict, Annotated
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -27,14 +26,36 @@ class AgentState(TypedDict):
 
 # Initialize Azure OpenAI client
 credential = AzureCliCredential()
-token_provider = get_bearer_token_provider(credential, "https://cognitiveservices.azure.com/.default")
+open_ai_token_provider = get_bearer_token_provider(credential, "https://cognitiveservices.azure.com/.default")
+search_token_provider = get_bearer_token_provider(credential, "https://search.azure.com/.default")
 
 client = AzureChatOpenAI(
     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
     azure_deployment=os.getenv("AZURE_OPENAI_RESPONSES_DEPLOYMENT_NAME"),
-    azure_ad_token_provider=token_provider,
+    azure_ad_token_provider=open_ai_token_provider,
     api_version="2024-08-01-preview",
 )
+
+# Initialize the retriever for Azure AI Search
+retriever = AzureAISearchRetriever(
+    api_key=None,
+    azure_ad_token=search_token_provider,
+    service_name=os.getenv("AZURE_SEARCH_INSTANCE_NAME"),
+    index_name=os.getenv("AZURE_SEARCH_INDEX_NAME"),
+    top_k=3,
+    content_key="chunk",  # Adjust this to match your index field containing the text content
+)
+
+# RAG prompt template
+rag_prompt = ChatPromptTemplate.from_messages([
+    ("system", """You are a helpful assistant that retrieves relevant contributions and expertise based on the provided context.
+Use only the information from the context to answer the question.
+If the context doesn't contain relevant information, say "I don't have enough information to answer that question, better to reach out to Seif directly"
+
+Context:
+{context}"""),
+    ("human", "{question}")
+])
 
 # Define the classification node
 def classification_agent(state: AgentState) -> AgentState:
@@ -57,19 +78,19 @@ If it is, classify it as 'Job Description'. If not, classify it as 'General Prom
 
     return {"classification": classification}
 
-# Define the poem writing node
-def poem_agent(state: AgentState) -> AgentState:
+# Define an agent to get the relevant contributions based on classification
+def contributions_agent(state: AgentState) -> AgentState:
     from langchain_core.messages import SystemMessage, HumanMessage
 
     messages = [
-        SystemMessage(content="You are an agent that writes a poem based on the provided classification."),
-        HumanMessage(content=f"The input was: {state['input']}\nClassification: {state['classification']}\n\nWrite a short poem based on this.")
+        SystemMessage(content="You are an agent that retrieves relevant contributions and expertise based on the classification and the job description provided."),
+        HumanMessage(content=f"The input was: {state['input']}\nClassification: {state['classification']}\n\nGet the relevant contributions and expertise.")
     ]
 
     response = client.invoke(messages)
 
-    poem = response.content
-    return {"poem": poem}
+    expertise = response.content
+    return {"Expertise": expertise}
 
 # Build the graph
 def build_graph():
@@ -77,12 +98,12 @@ def build_graph():
 
     # Add nodes
     workflow.add_node("classification_agent", classification_agent)
-    workflow.add_node("poem_agent", poem_agent)
+    workflow.add_node("contributions_agent", contributions_agent)
 
     # Define edges (sequential flow)
     workflow.add_edge(START, "classification_agent")
-    workflow.add_edge("classification_agent", "poem_agent")
-    workflow.add_edge("poem_agent", END)
+    workflow.add_edge("classification_agent", "contributions_agent")
+    workflow.add_edge("contributions_agent", END)
 
     return workflow.compile()
 
@@ -93,13 +114,13 @@ async def main():
     result = await graph.ainvoke({
         "input": "how can he help in managing a kubernetes cluster.",
         "classification": "",
-        "poem": ""
+        "expertise": ""
     })
 
     # Print results
     print(f"Classification: {result['classification']}")
-    #print(f"Poem:\n{result['poem']}")
+    #print(f"expertise:\n{result['expertise']}")
     print("\n=== Final Output ===")
-    print(result['poem'])
+    print(result['expertise'])
 
 asyncio.run(main())
