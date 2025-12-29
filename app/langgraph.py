@@ -1,7 +1,7 @@
 import os
 import asyncio
 from azure.identity import AzureCliCredential, get_bearer_token_provider
-from openai import AzureOpenAI
+from langchain_openai import AzureChatOpenAI
 from langgraph.graph import StateGraph, START, END
 from pydantic import BaseModel
 from typing import Literal, TypedDict, Annotated
@@ -24,52 +24,46 @@ class AgentState(TypedDict):
 credential = AzureCliCredential()
 token_provider = get_bearer_token_provider(credential, "https://cognitiveservices.azure.com/.default")
 
-client = AzureOpenAI(
+client = AzureChatOpenAI(
     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+    azure_deployment=os.getenv("AZURE_DEPLOYMENT_NAME"),
     azure_ad_token_provider=token_provider,
-    api_version="2024-10-21"
+    api_version="2024-08-01-preview",
 )
 
 # Define the classification node
 def classification_agent(state: AgentState) -> AgentState:
-    response = client.beta.chat.completions.parse(
-        model=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
-        messages=[
-            {
-                "role": "system",
-                "content": """You are a prompt classification agent to help understand if a provided prompt is job or career related, specially in Technology. When provided a prompt, you will figure out if its a job description or related to a specific task in a job or career related.
-                If it is, classify it as 'Job Description'. If not, classify it as 'General Prompt'. Respond only with the classification label."""
-            },
-            {
-                "role": "user",
-                "content": state["input"]
-            }
-        ],
-        max_tokens=100,
-        response_format=PromptClassification
-    )
-
-    classification = response.choices[0].message.parsed.classification
+    from langchain_core.messages import SystemMessage, HumanMessage
+    
+    messages = [
+        SystemMessage(content="""You are a prompt classification agent to help understand if a provided prompt is job or career related, specially in Technology. When provided a prompt, you will figure out if its a job description or related to a specific task in a job or career related.
+If it is, classify it as 'Job Description'. If not, classify it as 'General Prompt'. Respond only with the classification label."""),
+        HumanMessage(content=state["input"])
+    ]
+    
+    response = client.invoke(messages)
+    
+    # Parse the classification from the response content
+    content = response.content.strip()
+    if "Job Description" in content:
+        classification = "Job Description"
+    else:
+        classification = "General Prompt"
+    
     return {"classification": classification}
 
 # Define the poem writing node
 def poem_agent(state: AgentState) -> AgentState:
-    response = client.chat.completions.create(
-        model=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
-        messages=[
-            {
-                "role": "system",
-                "content": "You are an agent that writes a poem based on the provided classification."
-            },
-            {
-                "role": "user",
-                "content": f"The input was: {state['input']}\nClassification: {state['classification']}\n\nWrite a short poem based on this."
-            }
-        ],
-        max_tokens=100
-    )
-
-    poem = response.choices[0].message.content
+    from langchain_core.messages import SystemMessage, HumanMessage
+    
+    messages = [
+        SystemMessage(content="You are an agent that writes a poem based on the provided classification."),
+        HumanMessage(content=f"The input was: {state['input']}\nClassification: {state['classification']}\n\nWrite a short poem based on this.")
+    ]
+    
+    response = client.invoke(messages)
+    
+    poem = response.content
     return {"poem": poem}
 
 # Build the graph
@@ -99,8 +93,7 @@ async def main():
 
     # Print results
     print(f"Classification: {result['classification']}")
-    print("---")
-    print(f"Poem:\n{result['poem']}")
+    #print(f"Poem:\n{result['poem']}")
     print("\n=== Final Output ===")
     print(result['poem'])
 

@@ -30,9 +30,8 @@ async def main():
         """,
         name="test_agent",
         max_tokens=100,
-        id="test-agent"
+        id="test-agent",
     )
-
     workflow = SequentialBuilder().participants([classification_agent, test_agent]).build()
 
     result = await workflow.run("how can he help in managing a kubernetes cluster.")
