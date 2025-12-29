@@ -36,12 +36,6 @@ import svgHl from "../assets/hl.svg";
           />
         </div>
       </div>
-      <div
-        id="ai-response"
-        class="hidden mt-4 p-4 bg-gray-100 rounded-lg text-left"
-      >
-        <p id="ai-response-text" class="text-gray-800"></p>
-      </div>
     </div>
     <img
       src={svgPinkStar.src}
@@ -52,6 +46,46 @@ import svgHl from "../assets/hl.svg";
   </div>
 </section>
 
+<!-- AI Response Modal -->
+<div id="ai-modal" class="fixed inset-0 z-50 hidden">
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" id="ai-modal-backdrop"></div>
+  
+  <!-- Modal Content -->
+  <div class="absolute inset-0 flex items-center justify-center p-4">
+    <div class="relative bg-white max-w-2xl w-full max-h-[80vh] overflow-y-auto rounded-lg shadow-2xl">
+      <!-- Close Button -->
+      <button
+        id="ai-modal-close"
+        class="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+      
+      <!-- Modal Body -->
+      <div class="p-8">
+        <h3 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 8V4H8"></path>
+            <rect width="16" height="12" x="4" y="8" rx="2"></rect>
+            <path d="M2 14h2"></path>
+            <path d="M20 14h2"></path>
+            <path d="M15 13v2"></path>
+            <path d="M9 13v2"></path>
+          </svg>
+          AI Response
+        </h3>
+        <div class="prose prose-gray max-w-none">
+          <p id="ai-response-text" class="text-gray-800 whitespace-pre-wrap"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
   import { askAI, onTextboxFocus } from "../services/aiService";
 
@@ -59,8 +93,29 @@ import svgHl from "../assets/hl.svg";
   const aiQuestion = document.getElementById(
     "ai-question"
   ) as HTMLTextAreaElement;
-  const aiResponse = document.getElementById("ai-response");
+  const aiModal = document.getElementById("ai-modal");
+  const aiModalBackdrop = document.getElementById("ai-modal-backdrop");
+  const aiModalClose = document.getElementById("ai-modal-close");
   const aiResponseText = document.getElementById("ai-response-text");
+
+  // Modal functions
+  function openModal(text: string) {
+    if (aiResponseText) aiResponseText.textContent = text;
+    aiModal?.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeModal() {
+    aiModal?.classList.add("hidden");
+    document.body.style.overflow = "";
+  }
+
+  // Modal event listeners
+  aiModalBackdrop?.addEventListener("click", closeModal);
+  aiModalClose?.addEventListener("click", closeModal);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeModal();
+  });
 
   // Handle textbox focus event
   aiQuestion?.addEventListener("focus", async () => {
@@ -95,19 +150,11 @@ import svgHl from "../assets/hl.svg";
 
     try {
       const data = await askAI(question);
-
-      // Show response
-      if (aiResponse && aiResponseText) {
-        aiResponse.classList.remove("hidden");
-        aiResponseText.textContent =
-          data.answer || data.message || "No response received";
-      }
+      const responseText = data.answer || data.message || "No response received";
+      openModal(responseText);
     } catch (error) {
       console.error("Error:", error);
-      if (aiResponse && aiResponseText) {
-        aiResponse.classList.remove("hidden");
-        aiResponseText.textContent = "An error occurred. Please try again.";
-      }
+      openModal("An error occurred. Please try again.");
     } finally {
       // Reset button state
       askAiBtn.textContent = "Ask AI";
