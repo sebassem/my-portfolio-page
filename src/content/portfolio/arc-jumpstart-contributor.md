@@ -1,6 +1,6 @@
 ---
 name: "Azure Arc Jumpstart - Active Contributor"
-category: ["Open Source", "Content"]
+category: ["Contributions", "Content"]
 cover: "https://images.pexels.com/photos/577585/pexels-photo-577585.jpeg?auto=compress&cs=tinysrgb&w=1600"
 link: "https://azurearcjumpstart.com"
 order: 19

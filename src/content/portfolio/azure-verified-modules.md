@@ -1,6 +1,6 @@
 ---
 name: "Azure Verified Modules Contributor"
-category: ["Open Source", "Architecture"]
+category: ["Contributions", "Architecture"]
 cover: "https://images.pexels.com/photos/4164418/pexels-photo-4164418.jpeg?auto=compress&cs=tinysrgb&w=1600"
 link: "https://azure.github.io/Azure-Verified-Modules/"
 order: 10

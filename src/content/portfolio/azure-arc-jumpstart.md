@@ -1,6 +1,6 @@
 ---
 name: "Azure Arc Jumpstart - Core Maintainer"
-category: ["Open Source", "AI"]
+category: ["Contributions", "AI"]
 cover: "https://images.pexels.com/photos/1148820/pexels-photo-1148820.jpeg?auto=compress&cs=tinysrgb&w=1600"
 link: "https://azurearcjumpstart.com"
 order: 3

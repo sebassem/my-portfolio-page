@@ -1,6 +1,6 @@
 ---
 name: "ALZ Subscription Vending Module"
-category: ["Open Source", "Architecture"]
+category: ["Contributions", "Architecture"]
 cover: "https://images.pexels.com/photos/546819/pexels-photo-546819.jpeg?auto=compress&cs=tinysrgb&w=1600"
 link: "https://github.com/Azure/bicep-lz-vending"
 order: 5

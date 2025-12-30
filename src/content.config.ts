@@ -5,7 +5,7 @@ const portfolio = defineCollection({
   loader: glob({ pattern: "**/*.md", base: "./src/content/portfolio" }),
   schema: z.object({
     name: z.string(),
-    category: z.array(z.enum(['AI', 'Architecture', 'Open Source', 'Speaking', 'Content'])),
+    category: z.array(z.enum(['AI', 'Architecture', 'Contributions', 'Speaking', 'Content'])),
     cover: z.string(),
     link: z.string().url(),
     order: z.number().optional(),

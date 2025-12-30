@@ -1,6 +1,6 @@
 ---
 name: "Azure Governance Visualizer Accelerator"
-category: ["Open Source"]
+category: ["Contributions"]
 cover: "https://images.pexels.com/photos/7947663/pexels-photo-7947663.jpeg?auto=compress&cs=tinysrgb&w=1600"
 link: "https://github.com/Azure/Azure-Governance-Visualizer"
 order: 8

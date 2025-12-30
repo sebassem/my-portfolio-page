@@ -1,6 +1,6 @@
 ---
 name: "Azure Landing Zones - Core Maintainer"
-category: ["Open Source", "Architecture"]
+category: ["Contributions", "Architecture"]
 cover: "https://images.pexels.com/photos/1181467/pexels-photo-1181467.jpeg?auto=compress&cs=tinysrgb&w=1600"
 link: "https://github.com/Azure/ALZ-Bicep"
 order: 6
