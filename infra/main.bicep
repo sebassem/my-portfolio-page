@@ -216,8 +216,8 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
         name: 'portfolio-app'
         imageType: 'ContainerImage'
         resources: {
-          cpu: 1
-          memory: '512mb'
+          cpu: json('0.25')
+          memory: '0.5Gi'
         }
       }
     ]
