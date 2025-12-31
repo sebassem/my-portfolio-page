@@ -2,6 +2,7 @@ using './main.bicep'
 
 param location = 'swedencentral'
 param namingSuffix = 'sbm'
+param aiSearchSku = 'basic'
 param deployments = [
   {
     name: 'llm-deployment'

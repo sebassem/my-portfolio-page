@@ -50,13 +50,9 @@ resource foundry 'Microsoft.CognitiveServices/accounts@2025-10-01-preview' = {
   }
   properties: {
     disableLocalAuth: true
-    publicNetworkAccess: 'Disabled'
+    publicNetworkAccess: 'Enabled'
     customSubDomainName: foundryAccountName
     allowProjectManagement: true
-    networkAcls: {
-      defaultAction: 'Deny'
-      bypass: 'AzureServices'
-    }
     associatedProjects: [
       foundryProjectName
     ]

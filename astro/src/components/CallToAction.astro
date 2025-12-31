@@ -80,10 +80,9 @@ import svgHl from "../assets/hl.svg";
             <path d="M15 13v2"></path>
             <path d="M9 13v2"></path>
           </svg>
-          AI Response
+          AI Summary
         </h3>
-        <div class="prose prose-gray max-w-none">
-          <p id="ai-response-text" class="text-gray-800 whitespace-pre-wrap"></p>
+        <div id="ai-response-text" class="prose prose-gray max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-strong:text-gray-900 prose-ul:text-gray-700 prose-ol:text-gray-700 prose-li:marker:text-gray-500">
         </div>
       </div>
     </div>
@@ -92,6 +91,7 @@ import svgHl from "../assets/hl.svg";
 
 <script>
   import { askAI, onTextboxFocus } from "../services/aiService";
+  import { marked } from "marked";
 
   const askAiBtn = document.getElementById("ask-ai-btn");
   const aiQuestion = document.getElementById(
@@ -102,9 +102,18 @@ import svgHl from "../assets/hl.svg";
   const aiModalClose = document.getElementById("ai-modal-close");
   const aiResponseText = document.getElementById("ai-response-text");
 
+  // Configure marked for safe rendering
+  marked.setOptions({
+    breaks: true,
+    gfm: true,
+  });
+
   // Modal functions
   function openModal(text: string) {
-    if (aiResponseText) aiResponseText.textContent = text;
+    if (aiResponseText) {
+      // Parse markdown and render as HTML
+      aiResponseText.innerHTML = marked.parse(text) as string;
+    }
     aiModal?.classList.remove("hidden");
     document.body.style.overflow = "hidden";
   }

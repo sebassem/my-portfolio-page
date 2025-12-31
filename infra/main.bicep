@@ -49,7 +49,7 @@ param deployments array = [
       version: '2'
     }
     sku: {
-      capacity: 3
+      capacity: 120
       name: 'Standard'
     }
   }
@@ -76,7 +76,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.31.0' = {
     kind: 'StorageV2'
     accessTier: 'Cold'
     allowBlobPublicAccess: false
-    publicNetworkAccess: 'Disabled'
+    publicNetworkAccess: 'Enabled'
     allowSharedKeyAccess: false
     minimumTlsVersion: 'TLS1_2'
     roleAssignments: [
@@ -181,7 +181,7 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.13.3' = {
       }
       {
         name: 'ragindexname'
-        value: 'test'
+        value: 'rag-1767182807212'
       }
     ]
     roleAssignments: [
