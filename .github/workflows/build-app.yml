@@ -1,0 +1,92 @@
+name: Build and Push Application
+
+on:
+    push:
+        branches:
+            - main
+        paths:
+            - "app/**"
+    pull_request:
+        branches:
+            - main
+        paths:
+            - "app/**"
+    workflow_dispatch:
+
+permissions:
+    id-token: write
+    contents: write
+
+env:
+    AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+    AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+    ACR_NAME: ${{ vars.ACR_NAME }}
+    IMAGE_NAME: portfolio-app
+
+jobs:
+    build:
+        name: Build and Push Docker Image
+        runs-on: ubuntu-latest
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Bump version and push tag
+              id: version
+              uses: mathieudutour/github-tag-action@v6.2
+              with:
+                  github_token: ${{ secrets.GITHUB_TOKEN }}
+                  default_bump: patch
+                  tag_prefix: v
+                  release_branches: main
+
+            - name: Azure Login
+              uses: azure/login@v2
+              with:
+                  client-id: ${{ env.AZURE_CLIENT_ID }}
+                  tenant-id: ${{ env.AZURE_TENANT_ID }}
+                  subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+                  enable-AzPSSession: false
+
+            - name: Login to Azure Container Registry
+              run: |
+                  az acr login --name ${{ env.ACR_NAME }}
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Build and push Docker image to ACR
+              uses: docker/build-push-action@v6
+              with:
+                  context: app/
+                  file: app/Dockerfile
+                  push: true
+                  tags: |
+                      ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.new_tag }}
+                      ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+                      ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
+                  cache-from: type=gha
+                  cache-to: type=gha,mode=max
+
+    validate:
+        name: Validate Dockerfile
+        runs-on: ubuntu-latest
+        if: github.event_name == 'pull_request'
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Build Docker image (validation only)
+              uses: docker/build-push-action@v6
+              with:
+                  context: app/
+                  file: app/Dockerfile
+                  push: false
+                  tags: ${{ env.IMAGE_NAME }}:validation

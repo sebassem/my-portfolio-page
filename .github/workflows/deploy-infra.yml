@@ -94,21 +94,11 @@ jobs:
                         --name "infra-deployment-${{ github.run_number }}" \
                         --query 'properties.outputs' -o json)
                       echo "acr_name=$(echo $deployment_output | jq -r '.acrName.value')" >> $GITHUB_OUTPUT
-            - name: Login to Azure Container Registry
+                      echo "resource_group=$(echo $deployment_output | jq -r '.resourceGroupName.value')" >> $GITHUB_OUTPUT
+
+            - name: Update repository variables
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: |
-                  az acr login --name ${{ steps.deploy.outputs.acr_name }}
-
-            - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v3
-
-            - name: Build and push Docker image to ACR
-              uses: docker/build-push-action@v6
-              with:
-                  context: app/
-                  file: app/Dockerfile
-                  push: true
-                  tags: |
-                      ${{ steps.deploy.outputs.acr_name }}.azurecr.io/portfolio-app:${{ github.sha }}
-                      ${{ steps.deploy.outputs.acr_name }}.azurecr.io/portfolio-app:latest
-                  cache-from: type=gha
-                  cache-to: type=gha,mode=max
+                  gh variable set ACR_NAME --body "${{ steps.deploy.outputs.acr_name }}"
+                  gh variable set RESOURCE_GROUP --body "${{ steps.deploy.outputs.resource_group }}"
