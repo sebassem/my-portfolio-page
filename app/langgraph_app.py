@@ -85,7 +85,7 @@ llm = AzureChatOpenAI(
     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
     azure_deployment=os.getenv("AZURE_OPENAI_RESPONSES_DEPLOYMENT_NAME"),
     azure_ad_token_provider=openai_token_provider,
-    api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
+    api_version="2024-05-01-preview",
 )
 
 # Azure AI Search retriever for RAG
