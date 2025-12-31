@@ -171,7 +171,7 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.13.3' = {
       }
       {
         name: 'ragindexname'
-        value: ''
+        value: 'test'
       }
     ]
     roleAssignments: [
