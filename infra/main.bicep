@@ -55,8 +55,6 @@ param deployments array = [
   }
 ]
 
-var openAIApiVersion = '2024-05-01-preview'
-
 resource rg 'Microsoft.Resources/resourceGroups@2025-04-01' = {
   name: resourceGroupName
   location: location
