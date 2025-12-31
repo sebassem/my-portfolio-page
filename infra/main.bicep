@@ -249,3 +249,5 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
 
 output foundryEndpoint string = foundry.outputs.foundryEndpoint
 output acrName string = acr.outputs.name
+output resourceGroupName string = rg.name
+output containerAppName string = containerApp.outputs.name

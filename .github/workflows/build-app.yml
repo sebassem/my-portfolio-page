@@ -22,6 +22,8 @@ env:
     AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
     AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
     ACR_NAME: ${{ vars.ACR_NAME }}
+    RESOURCE_GROUP: ${{ vars.RESOURCE_GROUP }}
+    CONTAINER_APP_NAME: ${{ vars.CONTAINER_APP_NAME }}
     IMAGE_NAME: portfolio-app
 
 jobs:
@@ -71,6 +73,13 @@ jobs:
                       ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
                   cache-from: type=gha
                   cache-to: type=gha,mode=max
+
+            - name: Deploy to Container App
+              run: |
+                  az containerapp update \
+                    --name ${{ env.CONTAINER_APP_NAME }} \
+                    --resource-group ${{ env.RESOURCE_GROUP }} \
+                    --image ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.new_tag }}
 
     validate:
         name: Validate Dockerfile
