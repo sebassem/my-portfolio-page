@@ -21,9 +21,9 @@ env:
     AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
     AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
     AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-    ACR_NAME: ${{ vars.ACR_NAME }}
-    RESOURCE_GROUP: ${{ vars.RESOURCE_GROUP }}
-    CONTAINER_APP_NAME_ASTRO: ${{ vars.CONTAINER_APP_NAME_ASTRO }}
+    ACR_NAME: ${{ secrets.ACR_NAME }}
+    RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
+    CONTAINER_APP_NAME_ASTRO: ${{ secrets.CONTAINER_APP_NAME_ASTRO }}
     IMAGE_NAME: portfolio-astro
 
 jobs:

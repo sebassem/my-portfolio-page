@@ -16,9 +16,9 @@ permissions:
   contents: read
 
 env:
-  RESOURCE_GROUP: ${{ vars.RESOURCE_GROUP }}
-  CONTAINER_NAME: ${{ vars.CONTAINER_NAME }}
-  STORAGE_ACCOUNT_NAME: ${{ vars.STORAGE_ACCOUNT_NAME }}
+  RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
+  CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
+  STORAGE_ACCOUNT_NAME: ${{ secrets.STORAGE_ACCOUNT_NAME }}
 
 jobs:
   upload:
