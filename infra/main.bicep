@@ -10,8 +10,6 @@ param acrName string = 'acrportfolio${namingSuffix}infra'
 
 param containerAppsIdentityName string = 'uai-${namingSuffix}-apps-infra'
 
-param gitHubIdentityName string = 'uai-${namingSuffix}-github-infra'
-
 param storageAccountName string = 'stg${namingSuffix}infra'
 
 param foundryAccountName string = 'foundry-${namingSuffix}-infra'
@@ -67,15 +65,6 @@ module containerAppsIdentity 'br/public:avm/res/managed-identity/user-assigned-i
     location: location
   }
 }
-
-module githubIdentity 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.3' = {
-  scope: rg
-  params: {
-    name: gitHubIdentityName
-    location: location
-  }
-}
-
 module storageAccount 'br/public:avm/res/storage/storage-account:0.31.0' = {
   scope: rg
   params: {
@@ -249,3 +238,4 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
 }
 
 output foundryEndpoint string = foundry.outputs.foundryEndpoint
+output acrName string = acr.outputs.name

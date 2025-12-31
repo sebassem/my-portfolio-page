@@ -84,18 +84,31 @@ jobs:
                   enable-AzPSSession: false
 
             - name: Deploy Bicep template
+              id: deploy
               uses: azure/CLI@v2
               with:
                   inlineScript: |
-                      az deployment sub create \
+                      deployment_output=$(az deployment sub create \
                         --location swedencentral \
                         --parameters infra/main.bicepparam \
-                        --name "infra-deployment-${{ github.run_number }}"
-
-            - name: Get deployment outputs
-              uses: azure/CLI@v2
-              with:
-                  inlineScript: |
-                      az deployment sub show \
                         --name "infra-deployment-${{ github.run_number }}" \
-                        --query properties.outputs
+                        --query 'properties.outputs' -o json)
+                      echo "acr_name=$(echo $deployment_output | jq -r '.acrName.value')" >> $GITHUB_OUTPUT
+            - name: Login to Azure Container Registry
+              run: |
+                  az acr login --name ${{ steps.deploy.outputs.acr_name }}
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Build and push Docker image to ACR
+              uses: docker/build-push-action@v6
+              with:
+                  context: app/
+                  file: app/Dockerfile
+                  push: true
+                  tags: |
+                      ${{ steps.deploy.outputs.acr_name }}.azurecr.io/angie-app:${{ github.sha }}
+                      ${{ steps.deploy.outputs.acr_name }}.azurecr.io/angie-app:latest
+                  cache-from: type=gha
+                  cache-to: type=gha,mode=max
