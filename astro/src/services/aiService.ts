@@ -3,12 +3,10 @@ export interface AskAIResponse {
   message?: string;
 }
 
-// Get the AI API base URL from environment variable
-// Falls back to relative path for local development
-const AI_API_BASE_URL = import.meta.env.AI_API_URL ? `https://${import.meta.env.AI_API_URL}` : '';
-
+// Use local API route that proxies to the backend
+// This allows the server to reach internal container app URLs
 export async function askAI(question: string): Promise<AskAIResponse> {
-  const response = await fetch(`${AI_API_BASE_URL}/ask`, {
+  const response = await fetch('/api/ask', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -20,11 +18,5 @@ export async function askAI(question: string): Promise<AskAIResponse> {
 }
 
 export async function onTextboxFocus(): Promise<void> {
-  await fetch(`${AI_API_BASE_URL}/ask`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ event: 'focus', timestamp: new Date().toISOString() }),
-  });
+  // No-op or implement if needed
 }

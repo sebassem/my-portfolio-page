@@ -348,7 +348,7 @@ module containerAppAstro 'br/public:avm/res/app/container-app:0.19.0' = {
         }
         env: [
           {
-            name: 'PUBLIC_AI_API_URL'
+            name: 'AI_API_URL'
             value: containerApp.outputs.fqdn
           }
         ]
