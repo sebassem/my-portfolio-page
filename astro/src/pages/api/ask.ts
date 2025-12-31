@@ -13,7 +13,7 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
     
-    const response = await fetch(`https://${AI_API_URL}/ask`, {
+    const response = await fetch(`${AI_API_URL}/ask`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
