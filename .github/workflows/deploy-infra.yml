@@ -84,23 +84,10 @@ jobs:
                   enable-AzPSSession: false
 
             - name: Deploy Bicep template
-              id: deploy
               uses: azure/CLI@v2
               with:
                   inlineScript: |
-                      deployment_output=$(az deployment sub create \
+                      az deployment sub create \
                         --location swedencentral \
                         --parameters infra/main.bicepparam \
-                        --name "infra-deployment-${{ github.run_number }}" \
-                        --query 'properties.outputs' -o json)
-                      echo "acr_name=$(echo $deployment_output | jq -r '.acrName.value')" >> $GITHUB_OUTPUT
-                      echo "resource_group=$(echo $deployment_output | jq -r '.resourceGroupName.value')" >> $GITHUB_OUTPUT
-                      echo "container_app_name=$(echo $deployment_output | jq -r '.containerAppName.value')" >> $GITHUB_OUTPUT
-
-            - name: Update repository variables
-              env:
-                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              run: |
-                  gh variable set ACR_NAME --body "${{ steps.deploy.outputs.acr_name }}"
-                  gh variable set RESOURCE_GROUP --body "${{ steps.deploy.outputs.resource_group }}"
-                  gh variable set CONTAINER_APP_NAME --body "${{ steps.deploy.outputs.container_app_name }}"
+                        --name "infra-deployment-${{ github.run_number }}"

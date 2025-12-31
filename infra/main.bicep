@@ -218,6 +218,12 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
         containerAppsIdentity.outputs.resourceId
       ]
     }
+    registries: [
+      {
+        server: acr.outputs.loginServer
+        identity: containerAppsIdentity.outputs.resourceId
+      }
+    ]
     //ingressExternal: false
     containers: [
       {
