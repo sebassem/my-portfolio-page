@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
 
 export const POST: APIRoute = async ({ request }) => {
-  const AI_API_URL = import.meta.env.AI_API_URL;
+  // Use process.env for runtime environment variables in Node.js
+  const AI_API_URL = process.env.AI_API_URL;
   
   if (!AI_API_URL) {
     return new Response(JSON.stringify({ message: 'AI API URL not configured' }), {
