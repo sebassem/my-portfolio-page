@@ -128,7 +128,9 @@ def classification_agent(state: AgentState) -> dict:
         ])
 
         content = response.content.strip()
-        classification = "Job Description" if "Job Description" in content else "General Prompt"
+        print(f"Classification LLM response: '{content}'")
+        classification = "Job Description" if "job description" in content.lower() else "General Prompt"
+        print(f"Final classification: '{classification}'")
 
         return {"classification": classification, "rate_limited": False}
     except RateLimitError:
