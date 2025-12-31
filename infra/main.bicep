@@ -246,14 +246,17 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
       {
         identity: containerAppsIdentity.outputs.resourceId
         keyVaultUrl: '${keyVault.outputs.uri}secrets/foundryendpoint'
+        name: 'foundryendpoint'
       }
       {
         identity: containerAppsIdentity.outputs.resourceId
         keyVaultUrl: '${keyVault.outputs.uri}secrets/searchendpoint'
+        name: 'searchendpoint'
       }
       {
         identity: containerAppsIdentity.outputs.resourceId
         keyVaultUrl: '${keyVault.outputs.uri}secrets/ragindexname'
+        name: 'ragindexname'
       }
     ]
   }
