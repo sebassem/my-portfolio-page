@@ -135,8 +135,11 @@ import svgHl from "../assets/hl.svg";
     if (e.key === "Escape") closeModal();
   });
 
-  // Handle textbox focus event
+  // Handle textbox focus event - warm up container only once
+  let hasWarmedUp = false;
   aiQuestion?.addEventListener("focus", async () => {
+    if (hasWarmedUp) return;
+    hasWarmedUp = true;
     try {
       await onTextboxFocus();
     } catch (error) {

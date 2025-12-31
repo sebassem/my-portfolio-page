@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from langchain_community.retrievers import AzureAISearchRetriever
@@ -229,7 +229,7 @@ def build_graph():
 # =============================================================================
 
 # Initialize rate limiter
-# Uses IP address for rate limiting, 10 requests per minute
+# Uses IP address for rate limiting
 limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
@@ -238,9 +238,28 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Add rate limiter to app state and register exception handler
+# Custom rate limit exceeded handler with fun messages
+RATE_LIMIT_MESSAGES = [
+    "🚦 We've hit our AI request limit! Please try again in about a minute, or reach out to Seif directly.",
+    "⏰ Too many AI requests at once! The limit resets in about a minute - try again shortly or contact Seif directly.",
+    "🤖 Our AI is taking a quick breather (request limit reached). Please wait about a minute and try again!",
+    "⚡ AI request limit reached! Give it a minute to reset, or skip the AI and reach out to Seif directly.",
+    "☕ Hit the AI request cap! Try again in about a minute, or feel free to contact Seif the old-fashioned way.",
+]
+
+def custom_rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    """Custom handler for rate limit exceeded - returns fun message."""
+    return JSONResponse(
+        status_code=429,
+        content={
+            "answer": random.choice(RATE_LIMIT_MESSAGES),
+            "is_job_related": False
+        }
+    )
+
+# Add rate limiter to app state and register custom exception handler
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, custom_rate_limit_handler)
 
 # Note: CORS not needed - this API is internal-only (ingressExternal: false)
 # Only accessible by other containers in the same environment
