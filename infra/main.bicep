@@ -146,6 +146,11 @@ module aiSearch 'br/public:avm/res/search/search-service:0.12.0' = {
         roleDefinitionIdOrName: '/providers/Microsoft.Authorization/roleDefinitions/1407120a-92aa-4202-b7e9-c0e197c71c8f'
         description: 'Search Index Data Reader'
       }
+      {
+        principalId: deployer().objectId
+        roleDefinitionIdOrName: '/providers/Microsoft.Authorization/roleDefinitions/1407120a-92aa-4202-b7e9-c0e197c71c8f'
+        description: 'Search Index Data Reader'
+      }
     ]
   }
 }
@@ -234,6 +239,40 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
           cpu: json('0.25')
           memory: '0.5Gi'
         }
+        env: [
+          {
+            name: 'AZURE_CLIENT_ID'
+            value: containerAppsIdentity.outputs.clientId
+          }
+          {
+            name: 'AZURE_OPENAI_ENDPOINT'
+            secretRef: 'foundryendpoint'
+          }
+          {
+            name: 'AZURE_OPENAI_RESPONSES_DEPLOYMENT_NAME'
+            value: 'llm-deployment'
+          }
+          {
+            name: 'AZURE_SEARCH_DEPLOYMENT_NAME'
+            value: 'embedding-deployment'
+          }
+          {
+            name: 'AZURE_OPENAI_API_VERSION'
+            value: '2024-05-01-preview'
+          }
+          {
+            name: 'AZURE_SEARCH_ENDPOINT'
+            secretRef: 'searchendpoint'
+          }
+          {
+            name: 'AZURE_SEARCH_INSTANCE_NAME'
+            secretRef: aiSearch.outputs.name
+          }
+          {
+            name: 'AZURE_SEARCH_INDEX_NAME'
+            secretRef: 'ragindexname'
+          }
+        ]
       }
     ]
     scaleSettings: {
