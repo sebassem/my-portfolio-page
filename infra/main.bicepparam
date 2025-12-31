@@ -7,9 +7,9 @@ param deployments = [
   {
     name: 'llm-deployment'
     model: {
-      format: 'DeepSeek'
-      name: 'DeepSeek-V3.2'
-      version: '1'
+      format: 'Microsoft'
+      name: 'Phi-4'
+      version: '7'
     }
     sku: {
       capacity: 250
