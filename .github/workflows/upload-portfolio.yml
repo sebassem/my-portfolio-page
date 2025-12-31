@@ -1,0 +1,76 @@
+name: Upload Portfolio Content
+
+on:
+  # Run when markdown files in portfolio folder change
+  push:
+    branches:
+      - main
+    paths:
+      - 'astro/src/content/portfolio/**'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+
+permissions:
+  id-token: write  # Required for OIDC authentication
+  contents: read
+
+env:
+  RESOURCE_GROUP: ${{ vars.RESOURCE_GROUP }}
+  CONTAINER_NAME: ${{ vars.CONTAINER_NAME }}
+  STORAGE_ACCOUNT_NAME: ${{ vars.STORAGE_ACCOUNT_NAME }}
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          enable-AzPSSession: false
+
+      - name: Ensure container exists
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az storage container create \
+              --name ${{ env.CONTAINER_NAME }} \
+              --account-name ${{ env.STORAGE_ACCOUNT_NAME }} \
+              --auth-mode login \
+              --only-show-errors || true
+
+      - name: Sync portfolio markdown files
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az storage blob sync \
+              --account-name ${{ env.STORAGE_ACCOUNT_NAME }} \
+              --container ${{ env.CONTAINER_NAME }} \
+              --source ./astro/src/content/portfolio \
+              --auth-mode login \
+              --delete-destination true \
+              --only-show-errors
+            
+            echo "✅ Synced portfolio files to storage account"
+
+      - name: List uploaded files
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            echo "📁 Files in container:"
+            az storage blob list \
+              --account-name ${{ env.STORAGE_ACCOUNT_NAME }} \
+              --container-name ${{ env.CONTAINER_NAME }} \
+              --auth-mode login \
+              --query "[].name" \
+              --output tsv
