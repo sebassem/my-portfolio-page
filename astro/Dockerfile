@@ -6,7 +6,7 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
+# Install all dependencies (including dev)
 RUN npm ci
 
 # Copy source files
@@ -15,12 +15,15 @@ COPY . .
 # Build the application
 RUN npm run build
 
+# Prune dev dependencies after build
+RUN npm prune --omit=dev
+
 # Production stage
 FROM node:22-alpine AS runtime
 
 WORKDIR /app
 
-# Copy built application from build stage
+# Copy only what's needed for production
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./
