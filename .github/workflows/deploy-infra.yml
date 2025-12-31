@@ -45,6 +45,7 @@ jobs:
     what-if:
         name: What-If Analysis
         runs-on: ubuntu-latest
+        needs: validate
         steps:
             - name: Checkout repository
               uses: actions/checkout@v4
@@ -55,6 +56,7 @@ jobs:
                   client-id: ${{ env.AZURE_CLIENT_ID }}
                   tenant-id: ${{ env.AZURE_TENANT_ID }}
                   subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+                  enable-AzPSSession: false
 
             - name: Run What-If
               uses: azure/CLI@v2
