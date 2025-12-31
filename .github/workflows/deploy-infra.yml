@@ -23,14 +23,21 @@ env:
     AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
 
 jobs:
-    lint:
-        name: Lint Bicep
+    validate:
+        name: Validate Bicep
         runs-on: ubuntu-latest
         steps:
             - name: Checkout repository
               uses: actions/checkout@v4
+            - name: Install Bicep
+              shell: bash
+              run: |
+                curl -Lo bicep https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64
+                chmod +x ./bicep
+                sudo mv ./bicep /usr/local/bin/bicep
+                bicep --version
 
-            - name: Run Bicep linter
+            - name: Bicep Build & Lint
               uses: azure/CLI@v2
               with:
                   inlineScript: |
