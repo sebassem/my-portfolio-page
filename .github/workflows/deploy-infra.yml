@@ -108,7 +108,7 @@ jobs:
                   file: app/Dockerfile
                   push: true
                   tags: |
-                      ${{ steps.deploy.outputs.acr_name }}.azurecr.io/angie-app:${{ github.sha }}
-                      ${{ steps.deploy.outputs.acr_name }}.azurecr.io/angie-app:latest
+                      ${{ steps.deploy.outputs.acr_name }}.azurecr.io/portfolio-app:${{ github.sha }}
+                      ${{ steps.deploy.outputs.acr_name }}.azurecr.io/portfolio-app:latest
                   cache-from: type=gha
                   cache-to: type=gha,mode=max

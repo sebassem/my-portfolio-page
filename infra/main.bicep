@@ -210,7 +210,17 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
         containerAppsIdentity.outputs.resourceId
       ]
     }
-    containers: []
+    containers: [
+      {
+        image: '${acr.outputs.loginServer}/portfolio-app:latest'
+        name: 'portfolio-app'
+        imageType: 'ContainerImage'
+        resources: {
+          cpu: 1
+          memory: '512mb'
+        }
+      }
+    ]
     environmentResourceId: appsEnvironment.outputs.resourceId
     identitySettings: [
       {
