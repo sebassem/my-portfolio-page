@@ -276,6 +276,27 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
             value: aiSearch.outputs.name
           }
         ]
+        probes: [
+          {
+            type: 'startup'
+            httpGet: {
+              path: '/'
+              port: 8000
+            }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 30
+          }
+          {
+            type: 'liveness'
+            httpGet: {
+              path: '/'
+              port: 8000
+            }
+            periodSeconds: 30
+            failureThreshold: 3
+          }
+        ]
       }
     ]
     scaleSettings: {
