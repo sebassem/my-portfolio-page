@@ -47,23 +47,21 @@ jobs:
               --auth-mode login \
               --only-show-errors || true
 
-      - name: Sync portfolio markdown files
+      - name: Upload portfolio markdown files
         uses: azure/cli@v2
-        env:
-          AZCOPY_AUTO_LOGIN_TYPE: AZCLI
-          AZCOPY_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
         with:
           azcliversion: latest
           inlineScript: |
-            az storage blob sync \
+            az storage blob upload-batch \
               --account-name ${{ env.STORAGE_ACCOUNT_NAME }} \
-              --container ${{ env.CONTAINER_NAME }} \
+              --destination ${{ env.CONTAINER_NAME }} \
               --source ./astro/src/content/portfolio \
-              --delete-destination true \
               --auth-mode login \
+              --overwrite true \
+              --pattern "*.md" \
               --only-show-errors
             
-            echo "✅ Synced portfolio files to storage account"
+            echo "✅ Uploaded portfolio files to storage account"
 
       - name: List uploaded files
         uses: azure/cli@v2
