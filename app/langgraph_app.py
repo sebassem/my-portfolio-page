@@ -322,6 +322,9 @@ async def ask_question(request: Request, question_request: QuestionRequest):
             )
 
     except Exception as e:
+        import traceback
+        print(f"Error processing question: {str(e)}")
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Error processing question: {str(e)}")
 
 
