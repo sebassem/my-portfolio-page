@@ -51,6 +51,7 @@ jobs:
         uses: azure/cli@v2
         env:
           AZCOPY_AUTO_LOGIN_TYPE: AZCLI
+          AZCOPY_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
         with:
           azcliversion: latest
           inlineScript: |
@@ -59,6 +60,7 @@ jobs:
               --container ${{ env.CONTAINER_NAME }} \
               --source ./astro/src/content/portfolio \
               --delete-destination true \
+              --auth-mode login \
               --only-show-errors
             
             echo "✅ Synced portfolio files to storage account"
