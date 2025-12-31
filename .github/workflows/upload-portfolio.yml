@@ -49,6 +49,8 @@ jobs:
 
       - name: Sync portfolio markdown files
         uses: azure/cli@v2
+        env:
+          AZCOPY_AUTO_LOGIN_TYPE: AZCLI
         with:
           azcliversion: latest
           inlineScript: |
@@ -56,7 +58,6 @@ jobs:
               --account-name ${{ env.STORAGE_ACCOUNT_NAME }} \
               --container ${{ env.CONTAINER_NAME }} \
               --source ./astro/src/content/portfolio \
-              --auth-mode login \
               --delete-destination true \
               --only-show-errors
             
