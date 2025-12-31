@@ -159,7 +159,7 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.13.3' = {
     enableRbacAuthorization: true
     enableSoftDelete: false
     enablePurgeProtection: false
-    publicNetworkAccess: 'Disabled'
+    publicNetworkAccess: 'Enabled'
     secrets: [
       {
         name: 'foundryendpoint'
@@ -184,6 +184,11 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.13.3' = {
         principalId: deployer().objectId
         roleDefinitionIdOrName: '/providers/Microsoft.Authorization/roleDefinitions/00482a5a-887f-4fb3-b363-3b7fe8e74483'
         description: 'Key Vault Administrator'
+      }
+      {
+        principalId: deployer().objectId
+        roleDefinitionIdOrName: '/providers/Microsoft.Authorization/roleDefinitions/4633458b-17de-408a-b874-0445c86b69e6'
+        description: 'Key Vault Secrets User'
       }
     ]
   }
@@ -210,6 +215,7 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
         containerAppsIdentity.outputs.resourceId
       ]
     }
+    //ingressExternal: false
     containers: [
       {
         image: '${acr.outputs.loginServer}/portfolio-app:latest'
