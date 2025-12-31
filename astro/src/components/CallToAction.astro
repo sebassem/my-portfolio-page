@@ -53,11 +53,11 @@ import svgHl from "../assets/hl.svg";
 <!-- AI Response Modal -->
 <div id="ai-modal" class="fixed inset-0 z-50 hidden">
   <!-- Backdrop -->
-  <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" id="ai-modal-backdrop"></div>
+  <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
   
   <!-- Modal Content -->
-  <div class="absolute inset-0 flex items-center justify-center p-4">
-    <div class="relative bg-white max-w-2xl w-full max-h-[80vh] overflow-y-auto rounded-lg shadow-2xl">
+  <div class="absolute inset-0 flex items-center justify-center p-4" id="ai-modal-backdrop">
+    <div class="relative bg-white max-w-4xl w-full max-h-[80vh] overflow-y-auto rounded-lg shadow-2xl" id="ai-modal-content">
       <!-- Close Button -->
       <button
         id="ai-modal-close"
@@ -124,7 +124,12 @@ import svgHl from "../assets/hl.svg";
   }
 
   // Modal event listeners
-  aiModalBackdrop?.addEventListener("click", closeModal);
+  aiModalBackdrop?.addEventListener("click", (e) => {
+    // Only close if clicking directly on the backdrop, not the modal content
+    if (e.target === aiModalBackdrop) {
+      closeModal();
+    }
+  });
   aiModalClose?.addEventListener("click", closeModal);
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeModal();
