@@ -56,6 +56,10 @@ resource foundry 'Microsoft.CognitiveServices/accounts@2025-10-01-preview' = {
     associatedProjects: [
       foundryProjectName
     ]
+    networkAcls: {
+      bypass: 'AzureServices'
+      defaultAction: 'Deny'
+    }
     restore: false
   }
 }
