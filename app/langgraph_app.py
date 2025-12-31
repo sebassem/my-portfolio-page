@@ -1,15 +1,15 @@
 """
 LangGraph Agent API for Job Classification and Expertise Retrieval
 
-This module implements a FastAPI service with a two-stage agent workflow:
-1. Classification Agent - Determines if input is job/career related
-2. Contributions Agent - Uses RAG to retrieve relevant expertise (only for job-related inputs)
+This module implements a FastAPI service with a single-call RAG agent:
+- Retrieves context from Azure AI Search
+- Single LLM call classifies AND responds (or returns OFF_TOPIC)
 """
 
 import os
 import random
 from pathlib import Path
-from typing import Literal, TypedDict
+from typing import TypedDict
 
 import yaml
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
@@ -22,8 +22,6 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from langchain_community.retrievers import AzureAISearchRetriever
 from langchain_core.messages import SystemMessage, HumanMessage
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import AzureChatOpenAI
 from langgraph.graph import StateGraph, START, END
 from openai import RateLimitError
@@ -58,8 +56,8 @@ PROMPTS = load_prompts()
 class AgentState(TypedDict):
     """State that flows through the graph."""
     input: str           # User's input query
-    classification: str  # "Job Description" or "General Prompt"
-    expertise: str       # Retrieved expertise from RAG
+    response: str        # LLM response (or "OFF_TOPIC")
+    is_job_related: bool # Whether the query was job-related
     rate_limited: bool   # Flag to indicate if we hit Azure OpenAI rate limit
 
 
@@ -102,101 +100,53 @@ retriever = AzureAISearchRetriever(
 # Prompt Templates (loaded from external configuration)
 # =============================================================================
 
-CLASSIFICATION_SYSTEM_PROMPT = PROMPTS["classification_prompt"]
-
-RAG_PROMPT = ChatPromptTemplate.from_messages([
-    ("system", PROMPTS["rag_system_prompt"]),
-    ("human", PROMPTS["rag_human_prompt"])
-])
+ASSISTANT_PROMPT = PROMPTS["assistant_prompt"]
 
 
 # =============================================================================
-# Agent Nodes
+# Agent Node (Single LLM Call)
 # =============================================================================
 
-def classification_agent(state: AgentState) -> dict:
+def assistant_agent(state: AgentState) -> dict:
     """
-    Classifies the input as job-related or general.
-    Uses RAG to retrieve relevant context that helps with classification.
-    Returns 'Job Description' or 'General Prompt'.
-    Handles Azure OpenAI rate limit (429) errors gracefully.
-    """
-    try:
-        # Retrieve relevant documents to help with classification
-        docs = retriever.invoke(state["input"])
-        context = "\n\n".join(doc.page_content for doc in docs) if docs else ""
-        
-        # Build classification prompt with RAG context
-        classification_prompt = CLASSIFICATION_SYSTEM_PROMPT
-        if context:
-            classification_prompt += f"""
-
-Here is relevant context from the knowledge base that may help with classification. 
-If the user's input relates to any of these topics, skills, or job-related keywords found in the context, classify it as 'Job Description':
-
-<context>
-{context}
-</context>"""
-
-        response = llm.invoke([
-            SystemMessage(content=classification_prompt),
-            HumanMessage(content=state["input"])
-        ])
-
-        content = response.content.strip()
-        print(f"Classification LLM response: '{content}'")
-        classification = "Job Description" if "job description" in content.lower() else "General Prompt"
-        print(f"Final classification: '{classification}'")
-
-        return {"classification": classification, "rate_limited": False}
-    except RateLimitError:
-        return {"classification": "Rate Limited", "rate_limited": True}
-    except Exception as e:
-        # Check if the underlying cause is a rate limit error
-        if "429" in str(e) or "rate limit" in str(e).lower():
-            return {"classification": "Rate Limited", "rate_limited": True}
-        raise
-
-
-def contributions_agent(state: AgentState) -> dict:
-    """
-    Uses RAG to retrieve relevant expertise from Azure AI Search.
-    Only runs when classification is 'Job Description'.
+    Single agent that:
+    1. Retrieves RAG context
+    2. Makes ONE LLM call that classifies AND responds
+    
+    Returns OFF_TOPIC for non-job-related queries.
     Handles Azure OpenAI rate limit (429) errors gracefully.
     """
     try:
         # Retrieve relevant documents
         docs = retriever.invoke(state["input"])
-        context = "\n\n".join(doc.page_content for doc in docs)
-
-        # Build and execute RAG chain
-        chain = RAG_PROMPT | llm | StrOutputParser()
-        expertise = chain.invoke({
-            "context": context,
-            "question": f"Based on the job description: {state['input']}\n\nWhat relevant contributions and expertise can you find?"
-        })
-
-        return {"expertise": expertise, "rate_limited": False}
+        context = "\n\n".join(doc.page_content for doc in docs) if docs else ""
+        
+        # Build prompt with context
+        system_prompt = ASSISTANT_PROMPT.format(context=context)
+        
+        # Single LLM call - classifies and responds
+        response = llm.invoke([
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=state["input"])
+        ])
+        
+        content = response.content.strip()
+        print(f"LLM response: '{content[:100]}...'")
+        
+        # Check if off-topic
+        is_off_topic = content == "OFF_TOPIC" or content.startswith("OFF_TOPIC")
+        
+        return {
+            "response": content,
+            "is_job_related": not is_off_topic,
+            "rate_limited": False
+        }
     except RateLimitError:
-        return {"expertise": "", "rate_limited": True}
+        return {"response": "", "is_job_related": False, "rate_limited": True}
     except Exception as e:
-        # Check if the underlying cause is a rate limit error
         if "429" in str(e) or "rate limit" in str(e).lower():
-            return {"expertise": "", "rate_limited": True}
+            return {"response": "", "is_job_related": False, "rate_limited": True}
         raise
-
-
-# =============================================================================
-# Graph Routing
-# =============================================================================
-
-def route_by_classification(state: AgentState) -> Literal["contributions_agent", "__end__"]:
-    """Routes to contributions_agent only for job-related prompts, ends early if rate limited."""
-    if state.get("rate_limited"):
-        return "__end__"
-    if state["classification"] == "Job Description":
-        return "contributions_agent"
-    return "__end__"
 
 
 # =============================================================================
@@ -205,22 +155,13 @@ def route_by_classification(state: AgentState) -> Literal["contributions_agent",
 
 def build_graph():
     """
-    Builds the LangGraph workflow:
-
-    START -> classification_agent -> [Job Description?] -> contributions_agent -> END
-                                  -> [General Prompt?]  -> END
+    Builds a simple LangGraph workflow:
+    START -> assistant_agent -> END
     """
     workflow = StateGraph(AgentState)
-
-    # Add nodes
-    workflow.add_node("classification_agent", classification_agent)
-    workflow.add_node("contributions_agent", contributions_agent)
-
-    # Define edges
-    workflow.add_edge(START, "classification_agent")
-    workflow.add_conditional_edges("classification_agent", route_by_classification)
-    workflow.add_edge("contributions_agent", END)
-
+    workflow.add_node("assistant_agent", assistant_agent)
+    workflow.add_edge(START, "assistant_agent")
+    workflow.add_edge("assistant_agent", END)
     return workflow.compile()
 
 
@@ -334,8 +275,8 @@ async def ask_question(request: Request, question_request: QuestionRequest):
     try:
         result = await graph.ainvoke({
             "input": question,
-            "classification": "",
-            "expertise": "",
+            "response": "",
+            "is_job_related": False,
             "rate_limited": False
         })
 
@@ -346,11 +287,10 @@ async def ask_question(request: Request, question_request: QuestionRequest):
                 is_job_related=False
             )
 
-        is_job_related = result["classification"] == "Job Description"
-
-        if is_job_related and result.get("expertise"):
+        # Return LLM response or fun message for off-topic
+        if result["is_job_related"]:
             return AnswerResponse(
-                answer=result["expertise"],
+                answer=result["response"],
                 is_job_related=True
             )
         else:
