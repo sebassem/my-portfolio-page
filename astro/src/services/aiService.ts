@@ -17,17 +17,7 @@ export async function askAI(question: string): Promise<AskAIResponse> {
   return response.json();
 }
 
-export async function onTextboxFocus(): Promise<void> {
+export function warmupBackend(): void {
   // Send a warm-up request to wake up the container app (fire and forget)
   fetch('/api/warmup').catch(() => {});
 }
-
-/*export async function onTextboxFocus(): Promise<void> {
-  await fetch('/api/ask', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ question: 'Wake up' }),
-  });
-}*/

@@ -90,7 +90,7 @@ import svgHl from "../assets/hl.svg";
 </div>
 
 <script>
-  import { askAI, onTextboxFocus } from "../services/aiService";
+  import { askAI, warmupBackend } from "../services/aiService";
   import { marked } from "marked";
 
   const askAiBtn = document.getElementById("ask-ai-btn");
@@ -135,17 +135,8 @@ import svgHl from "../assets/hl.svg";
     if (e.key === "Escape") closeModal();
   });
 
-  // Handle textbox focus event - warm up container only once
-  let hasWarmedUp = false;
-  aiQuestion?.addEventListener("focus", async () => {
-    if (hasWarmedUp) return;
-    hasWarmedUp = true;
-    try {
-      await onTextboxFocus();
-    } catch (error) {
-      console.error("Error on textbox focus:", error);
-    }
-  });
+  // Warm up container on page load (fire and forget)
+  warmupBackend();
 
   const charCount = document.getElementById("char-count");
 
