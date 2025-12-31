@@ -221,6 +221,21 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
         }
       }
     ]
+    scaleSettings: {
+      maxReplicas: 3
+      minReplicas: 0
+      rules: [
+        {
+          name: 'http-scaling'
+          http: {
+            metadata: {
+              concurrentRequests: '10'
+            }
+          }
+
+        }
+      ]
+    }
     environmentResourceId: appsEnvironment.outputs.resourceId
     identitySettings: [
       {
@@ -230,18 +245,15 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
     secrets: [
       {
         identity: containerAppsIdentity.outputs.resourceId
-        keyVaultUrl: '${keyVault.outputs.uri}/secrets/foundryendpoint'
-        name: 'foundryendpoint'
+        keyVaultUrl: '${keyVault.outputs.uri}secrets/foundryendpoint'
       }
       {
         identity: containerAppsIdentity.outputs.resourceId
-        keyVaultUrl: '${keyVault.outputs.uri}/secrets/searchendpoint'
-        name: 'searchendpoint'
+        keyVaultUrl: '${keyVault.outputs.uri}secrets/searchendpoint'
       }
       {
         identity: containerAppsIdentity.outputs.resourceId
-        keyVaultUrl: '${keyVault.outputs.uri}/secrets/ragindexname'
-        name: 'ragindexname'
+        keyVaultUrl: '${keyVault.outputs.uri}secrets/ragindexname'
       }
     ]
   }
