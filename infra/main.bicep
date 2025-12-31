@@ -159,7 +159,10 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.13.3' = {
     enableRbacAuthorization: true
     enableSoftDelete: false
     enablePurgeProtection: false
-    publicNetworkAccess: 'Enabled'
+    publicNetworkAccess: 'Disabled'
+    networkAcls: {
+      bypass: 'AzureServices'
+    }
     secrets: [
       {
         name: 'foundryendpoint'
