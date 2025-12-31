@@ -118,12 +118,29 @@ RAG_PROMPT = ChatPromptTemplate.from_messages([
 def classification_agent(state: AgentState) -> dict:
     """
     Classifies the input as job-related or general.
+    Uses RAG to retrieve relevant context that helps with classification.
     Returns 'Job Description' or 'General Prompt'.
     Handles Azure OpenAI rate limit (429) errors gracefully.
     """
     try:
+        # Retrieve relevant documents to help with classification
+        docs = retriever.invoke(state["input"])
+        context = "\n\n".join(doc.page_content for doc in docs) if docs else ""
+        
+        # Build classification prompt with RAG context
+        classification_prompt = CLASSIFICATION_SYSTEM_PROMPT
+        if context:
+            classification_prompt += f"""
+
+Here is relevant context from the knowledge base that may help with classification. 
+If the user's input relates to any of these topics, skills, or job-related keywords found in the context, classify it as 'Job Description':
+
+<context>
+{context}
+</context>"""
+
         response = llm.invoke([
-            SystemMessage(content=CLASSIFICATION_SYSTEM_PROMPT),
+            SystemMessage(content=classification_prompt),
             HumanMessage(content=state["input"])
         ])
 
