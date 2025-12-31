@@ -1,6 +1,6 @@
 ---
 name: "Hybrid & Multi-Cloud Field Enablement"
-category: ["Speaking", "Content"]
+category: ["Public speaking", "Content"]
 cover: "https://images.pexels.com/photos/7376/startup-photos.jpg?auto=compress&cs=tinysrgb&w=1600"
 link: "https://azure.microsoft.com/products/azure-arc"
 order: 13

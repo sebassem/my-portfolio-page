@@ -1,6 +1,6 @@
 ---
 name: "Microsoft Tech Talks Speaker"
-category: ["Speaking"]
+category: ["Public speaking"]
 cover: "https://images.pexels.com/photos/2774556/pexels-photo-2774556.jpeg?auto=compress&cs=tinysrgb&w=1600"
 link: "https://developer.microsoft.com/reactor/"
 order: 12

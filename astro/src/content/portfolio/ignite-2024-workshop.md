@@ -1,6 +1,6 @@
 ---
 name: "Microsoft Ignite 2024 - AI Workshop"
-category: ["Speaking", "AI"]
+category: ["Public speaking", "AI"]
 cover: "https://images.pexels.com/photos/2774556/pexels-photo-2774556.jpeg?auto=compress&cs=tinysrgb&w=1600"
 link: "https://ignite.microsoft.com"
 order: 5

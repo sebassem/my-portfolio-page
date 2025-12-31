@@ -1,6 +1,6 @@
 ---
 name: "Azure Arc - Global Tech Lead"
-category: ["Speaking", "Architecture"]
+category: ["Public speaking", "Architecture"]
 cover: "https://images.pexels.com/photos/1148820/pexels-photo-1148820.jpeg?auto=compress&cs=tinysrgb&w=1600"
 link: "https://azure.microsoft.com/products/azure-arc"
 order: 9
