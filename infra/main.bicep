@@ -232,8 +232,8 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
     //ingressExternal: false
     containers: [
       {
-        image: '${acr.outputs.loginServer}/portfolio-app:latest'
-        name: 'portfolio-app'
+        image: '${acr.outputs.loginServer}/portfolio-api:latest'
+        name: 'portfolio-api'
         imageType: 'ContainerImage'
         resources: {
           cpu: json('0.25')
@@ -263,10 +263,6 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
           {
             name: 'AZURE_SEARCH_ENDPOINT'
             secretRef: 'searchendpoint'
-          }
-          {
-            name: 'AZURE_SEARCH_INSTANCE_NAME'
-            secretRef: aiSearch.outputs.name
           }
           {
             name: 'AZURE_SEARCH_INDEX_NAME'
