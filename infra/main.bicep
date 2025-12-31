@@ -24,6 +24,8 @@ param containerAppsEnvironmentName string = 'cae-${namingSuffix}-infra'
 
 param containerAppName string = 'ca-${namingSuffix}-infra'
 
+param containerAppAstroName string = 'ca-astro-${namingSuffix}-infra'
+
 param aiSearchSku string = 'basic'
 
 param deployments array = [
@@ -207,7 +209,7 @@ module appsEnvironment 'br/public:avm/res/app/managed-environment:0.11.3' = {
   params: {
     name: containerAppsEnvironmentName
     location: location
-    publicNetworkAccess: 'Disabled'
+    publicNetworkAccess: 'Enabled'
     zoneRedundant: false
     internal: false
   }
@@ -229,7 +231,8 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
         identity: containerAppsIdentity.outputs.resourceId
       }
     ]
-    //ingressExternal: false
+    ingressExternal: false
+    ingressTargetPort: 8000
     containers: [
       {
         image: '${acr.outputs.loginServer}/portfolio-api:latest'
@@ -267,6 +270,10 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
           {
             name: 'AZURE_SEARCH_INDEX_NAME'
             secretRef: 'ragindexname'
+          }
+          {
+            name: 'AZURE_SEARCH_INSTANCE_NAME'
+            value: aiSearch.outputs.name
           }
         ]
       }
@@ -312,7 +319,56 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
   }
 }
 
+module containerAppAstro 'br/public:avm/res/app/container-app:0.19.0' = {
+  scope: rg
+  params: {
+    name: containerAppAstroName
+    location: location
+    managedIdentities: {
+      userAssignedResourceIds: [
+        containerAppsIdentity.outputs.resourceId
+      ]
+    }
+    registries: [
+      {
+        server: acr.outputs.loginServer
+        identity: containerAppsIdentity.outputs.resourceId
+      }
+    ]
+    ingressExternal: true
+    ingressTargetPort: 4321
+    containers: [
+      {
+        image: '${acr.outputs.loginServer}/portfolio-astro:latest'
+        name: 'portfolio-astro'
+        imageType: 'ContainerImage'
+        resources: {
+          cpu: json('0.25')
+          memory: '0.5Gi'
+        }
+      }
+    ]
+    scaleSettings: {
+      maxReplicas: 3
+      minReplicas: 0
+      rules: [
+        {
+          name: 'http-scaling'
+          http: {
+            metadata: {
+              concurrentRequests: '10'
+            }
+          }
+
+        }
+      ]
+    }
+    environmentResourceId: appsEnvironment.outputs.resourceId
+  }
+}
+
 output foundryEndpoint string = foundry.outputs.foundryEndpoint
 output acrName string = acr.outputs.name
 output resourceGroupName string = rg.name
 output containerAppName string = containerApp.outputs.name
+output containerAppAstroName string = containerAppAstro.outputs.name
