@@ -358,6 +358,7 @@ module containerAppAstro 'br/public:avm/res/app/container-app:0.19.0' = {
     ]
     ingressExternal: true
     ingressTargetPort: 4321
+    ingressAllowInsecure: false
     containers: [
       {
         image: '${acr.outputs.loginServer}/portfolio-astro:latest'
@@ -371,6 +372,27 @@ module containerAppAstro 'br/public:avm/res/app/container-app:0.19.0' = {
           {
             name: 'AI_API_URL'
             value: 'https://${containerApp.outputs.fqdn}'
+          }
+        ]
+        probes: [
+          {
+            type: 'startup'
+            httpGet: {
+              path: '/'
+              port: 4321
+            }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 30
+          }
+          {
+            type: 'liveness'
+            httpGet: {
+              path: '/'
+              port: 4321
+            }
+            periodSeconds: 30
+            failureThreshold: 3
           }
         ]
       }

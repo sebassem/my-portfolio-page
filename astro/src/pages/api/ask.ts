@@ -14,6 +14,21 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
     
+    // Server-side validation (defense-in-depth, matches client maxlength="1200")
+    if (!body.question || typeof body.question !== 'string') {
+      return new Response(JSON.stringify({ message: 'Question is required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    if (body.question.length > 1200) {
+      return new Response(JSON.stringify({ message: 'Question too long (max 1200 characters)' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
     const response = await fetch(`${AI_API_URL}/ask`, {
       method: 'POST',
       headers: {

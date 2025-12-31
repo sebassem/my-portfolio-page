@@ -18,5 +18,21 @@ export async function askAI(question: string): Promise<AskAIResponse> {
 }
 
 export async function onTextboxFocus(): Promise<void> {
-  // No-op or implement if needed
+  await fetch('/api/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ question: 'Wake up' }),
+  });
 }
+
+/*export async function onTextboxFocus(): Promise<void> {
+  await fetch('/api/ask', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ question: 'Wake up' }),
+  });
+}*/

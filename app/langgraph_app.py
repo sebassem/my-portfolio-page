@@ -15,7 +15,6 @@ import yaml
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -243,14 +242,8 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Note: CORS not needed - this API is internal-only (ingressExternal: false)
+# Only accessible by other containers in the same environment
 
 # Fun messages for non-job-related queries
 FUN_MESSAGES = [
@@ -309,12 +302,19 @@ async def ask_question(request: Request, question_request: QuestionRequest):
 
     Rate limited to 10 requests per minute per IP address.
     """
-    if not question_request.question.strip():
+    # Strip whitespace from input
+    question = question_request.question.strip()
+
+    if not question:
         raise HTTPException(status_code=400, detail="Question cannot be empty")
+
+    # Server-side validation (defense-in-depth, matches client maxlength)
+    if len(question) > 1200:
+        raise HTTPException(status_code=400, detail="Question too long (max 1200 characters)")
 
     try:
         result = await graph.ainvoke({
-            "input": question_request.question,
+            "input": question,
             "classification": "",
             "expertise": "",
             "rate_limited": False
