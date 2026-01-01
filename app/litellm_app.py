@@ -6,16 +6,22 @@ Caching:
 """
 
 import os
+import re
 import random
 from pathlib import Path
+from typing import Tuple
 
 import yaml
 import litellm
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from azure.search.documents import SearchClient
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 load_dotenv()
 
@@ -95,6 +101,63 @@ litellm.enable_cache()
 
 # Set callbacks for logging (optional)
 # litellm.success_callback = ["langfuse"]  # Uncomment for observability
+
+
+# =============================================================================
+# Rate Limiting (SlowAPI) & Input Sanitization
+# =============================================================================
+
+# Custom key function to handle X-Forwarded-For from Container Apps proxy
+def get_client_ip(request: Request) -> str:
+    """Extract client IP, handling proxies."""
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return get_remote_address(request)
+
+# Initialize rate limiter with in-memory storage (resets on restart, fine for scale-to-zero)
+# Rate limit: 10 requests per minute per IP (configurable via env)
+RATE_LIMIT = os.getenv("RATE_LIMIT", "10/minute")
+limiter = Limiter(key_func=get_client_ip)
+
+# Patterns that might indicate prompt injection or malicious input
+# Note: LiteLLM's moderation() is for harmful content, not prompt injection
+SUSPICIOUS_PATTERNS = [
+    r"ignore\s+(previous|above|all)\s+instructions?",
+    r"disregard\s+(previous|above|all)",
+    r"forget\s+(everything|previous|above)",
+    r"you\s+are\s+now",
+    r"new\s+instructions?",
+    r"system\s*:\s*",
+    r"<\s*script",
+    r"javascript\s*:",
+    r"\{\{.*\}\}",  # Template injection
+    r"\$\{.*\}",    # Variable injection
+]
+
+# Compile patterns for performance
+COMPILED_PATTERNS = [re.compile(p, re.IGNORECASE) for p in SUSPICIOUS_PATTERNS]
+
+
+def sanitize_input(text: str) -> Tuple[str, bool]:
+    """
+    Sanitize user input to prevent prompt injection attacks.
+    
+    Returns:
+        Tuple of (sanitized_text, is_suspicious)
+    """
+    # Check for suspicious patterns
+    for pattern in COMPILED_PATTERNS:
+        if pattern.search(text):
+            return text, True
+    
+    # Remove potential control characters (except newlines and tabs)
+    sanitized = ''.join(char for char in text if char.isprintable() or char in '\n\t')
+    
+    # Normalize excessive whitespace
+    sanitized = re.sub(r'\s{10,}', ' ', sanitized)
+    
+    return sanitized, False
 
 
 # =============================================================================
@@ -190,6 +253,10 @@ app = FastAPI(
     version="2.0.0"  # Bumped version for new implementation
 )
 
+# Register rate limiter with FastAPI
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # Note: CORS not needed - this API is internal-only (ingressExternal: false)
 # Only accessible by other containers in the same environment
 
@@ -236,7 +303,8 @@ async def root():
 
 
 @app.post("/ask", response_model=AnswerResponse)
-async def ask_question(question_request: QuestionRequest):
+@limiter.limit(RATE_LIMIT)
+async def ask_question(request: Request, question_request: QuestionRequest):
     """
     Process a question using direct Azure SDK + LiteLLM.
 
@@ -247,6 +315,8 @@ async def ask_question(question_request: QuestionRequest):
     - Response caching via LiteLLM (instant responses for repeated questions)
     - Automatic retries with exponential backoff
     - LiteLLM handles Azure OpenAI rate limits gracefully
+    - Rate limiting via SlowAPI (10/minute per IP by default)
+    - Input sanitization to prevent prompt injection
     """
     # Strip whitespace from input
     question = question_request.question.strip()
@@ -257,6 +327,18 @@ async def ask_question(question_request: QuestionRequest):
     # Server-side validation (defense-in-depth, matches client maxlength)
     if len(question) > 1200:
         raise HTTPException(status_code=400, detail="Question too long (max 1200 characters)")
+    
+    # Sanitize input and check for suspicious patterns
+    question, is_suspicious = sanitize_input(question)
+    
+    if is_suspicious:
+        # Log suspicious input for monitoring (don't expose details to client)
+        client_ip = get_client_ip(request)
+        print(f"Suspicious input detected from {client_ip}: {question[:100]}...")
+        return AnswerResponse(
+            answer=random.choice(FUN_MESSAGES),
+            is_job_related=False
+        )
 
     try:
         result = await get_ai_response(question)

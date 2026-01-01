@@ -21,17 +21,24 @@ RUN npm prune --omit=dev
 # Production stage
 FROM node:22-alpine AS runtime
 
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001 -G nodejs
+
 WORKDIR /app
 
 # Copy only what's needed for production
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/package.json ./
+COPY --from=build --chown=nodejs:nodejs /app/dist ./dist
+COPY --from=build --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --from=build --chown=nodejs:nodejs /app/package.json ./
 
 # Set environment variables
 ENV HOST=0.0.0.0
 ENV PORT=4321
 ENV NODE_ENV=production
+
+# Switch to non-root user
+USER nodejs
 
 # Expose the port
 EXPOSE 4321
