@@ -152,6 +152,8 @@ module aiSearch 'br/public:avm/res/search/search-service:0.12.0' = {
       systemAssigned: true
     }
     sku: aiSearchSku
+    replicaCount: 1
+    partitionCount: 1
     disableLocalAuth: true
     roleAssignments: [
       {
@@ -307,6 +309,12 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
             failureThreshold: 3
           }
         ]
+      }
+    ]
+    volumes: [
+      {
+        name: 'cache-volume'
+        storageType: 'EmptyDir'
       }
     ]
     scaleSettings: {
