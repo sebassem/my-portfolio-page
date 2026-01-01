@@ -444,31 +444,6 @@ module containerAppAstro 'br/public:avm/res/app/container-app:0.19.0' = {
   }
 }
 
-module nsp 'br/public:avm/res/network/network-security-perimeter:0.1.3' = {
-  scope: rg
-  params: {
-    name: 'nsp-${namingSuffix}-infra'
-    location: location
-    profiles: [
-      {
-        name: 'nsp-${namingSuffix}-profile'
-        accessRules: [
-          {
-            name: 'inbound'
-            direction: 'Inbound'
-            subscriptions: [
-              {
-                id: subscription().subscriptionId
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  }
-}
-
-
 output foundryEndpoint string = foundry.outputs.foundryEndpoint
 output acrName string = acr.outputs.name
 output resourceGroupName string = rg.name
