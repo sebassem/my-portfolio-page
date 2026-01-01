@@ -76,18 +76,19 @@ CACHE_TTL = int(os.getenv("CACHE_TTL_SECONDS", "3600"))
 # Default: in-memory local cache
 # This works well for single-instance deployments and scale-to-zero scenarios
 # Cache resets on cold start, but provides fast responses for repeated questions within a session
-#litellm.cache = litellm.Cache(type="local", ttl=CACHE_TTL)
+litellm.cache = litellm.Cache(type="local", ttl=CACHE_TTL)
 
 # -----------------------------------------------------------------------------
 # OPTIONAL: Persistent Disk Cache with Azure Files Mount
 # -----------------------------------------------------------------------------
-# Uncomment to enable disk cache:
-#CACHE_TYPE = os.getenv("CACHE_TYPE", "local")
-litellm.cache = litellm.Cache(
-    type="disk",
-    disk_cache_dir="/mnt/cache",
-    ttl=CACHE_TTL
-)
+# To enable disk caching with Azure Files, uncomment below and configure
+# the volume mount in your Container App Bicep (requires shared key access on storage)
+#
+# litellm.cache = litellm.Cache(
+#     type="disk",
+#     disk_cache_dir="/mnt/cache",
+#     ttl=CACHE_TTL
+# )
 
 # Enable caching globally
 litellm.enable_cache()

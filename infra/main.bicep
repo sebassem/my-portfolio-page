@@ -79,22 +79,6 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.31.0' = {
     publicNetworkAccess: 'Enabled'
     allowSharedKeyAccess: false
     minimumTlsVersion: 'TLS1_2'
-    fileServices: {
-      shares: [
-        {
-          name: 'cache-share'
-          accessTier: 'Cool'
-          enabledProtocols: 'SMB'
-          roleAssignments: [
-            {
-              principalId: containerAppsIdentity.outputs.principalId
-              roleDefinitionIdOrName: '0c867c2a-1d8c-454a-a3db-ab2ea1bdc8bb'
-              description: 'Storage File Data SMB Share Contributor'
-            }
-          ]
-        }
-      ]
-    }
     roleAssignments: [
       {
         principalId: aiSearch.outputs.?systemAssignedMIPrincipalId ?? ''
@@ -201,19 +185,7 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.13.3' = {
     ]
   }
 }
-
-module appsEnvironment 'modules/managed-app-env.bicep' = {
-  scope: rg
-  params: {
-    appEnvironmentName: containerAppsEnvironmentName
-    appEnvironmentStorageName: 'cache-storage'
-    shareName: 'cache-share'
-    storageAccountName: storageAccount.outputs.name
-    storageAccountKey: storageAccount.outputs.primaryAccessKey
-  }
-}
-
-/*module appsEnvironment 'br/public:avm/res/app/managed-environment:0.11.3' = {
+module appsEnvironment 'br/public:avm/res/app/managed-environment:0.11.3' = {
   scope: rg
   params: {
     name: containerAppsEnvironmentName
@@ -221,17 +193,8 @@ module appsEnvironment 'modules/managed-app-env.bicep' = {
     publicNetworkAccess: 'Enabled'
     zoneRedundant: false
     internal: false
-    storages: [
-      {
-        kind: 'NFS'
-        accessMode: 'ReadWrite'
-        shareName: 'cache-share'
-        storageAccountName: storageAccount.outputs.name
-      }
-    ]
   }
-}*/
-
+}
 module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
   scope: rg
   params: {
@@ -325,8 +288,7 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
     volumes: [
       {
         name: 'cache-volume'
-        storageType: 'AzureFile'
-        storageName: appsEnvironment.outputs.appEnvironmentStorageName
+        storageType: 'EmptyDir'
       }
     ]
     scaleSettings: {
@@ -344,7 +306,7 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
         }
       ]
     }
-    environmentResourceId: appsEnvironment.outputs.appEnvironmentResourceId
+    environmentResourceId: appsEnvironment.outputs.resourceId
     identitySettings: [
       {
         identity: containerAppsIdentity.outputs.resourceId
@@ -441,7 +403,58 @@ module containerAppAstro 'br/public:avm/res/app/container-app:0.19.0' = {
         }
       ]
     }
-    environmentResourceId: appsEnvironment.outputs.appEnvironmentResourceId
+    environmentResourceId: appsEnvironment.outputs.resourceId
+  }
+}
+
+module nsp 'br/public:avm/res/network/network-security-perimeter:0.1.3' = {
+  scope: rg
+  params: {
+    name: 'nsp-${namingSuffix}-infra'
+    location: location
+    resourceAssociations: [
+      {
+        privateLinkResource: keyVault.outputs.resourceId
+        profile: 'nsp-${namingSuffix}-infra-profile'
+        accessMode: 'Enforced'
+      }
+      {
+        privateLinkResource: storageAccount.outputs.resourceId
+        profile: 'nsp-${namingSuffix}-infra-profile'
+        accessMode: 'Enforced'
+      }
+      {
+        privateLinkResource: aiSearch.outputs.resourceId
+        profile: 'nsp-${namingSuffix}-infra-profile'
+        accessMode: 'Enforced'
+      }
+      {
+        privateLinkResource: foundry.outputs.foundryProjectResourceId
+        profile: 'nsp-${namingSuffix}-infra-profile'
+        accessMode: 'Enforced'
+      }
+      {
+        privateLinkResource: acr.outputs.resourceId
+        profile: 'nsp-${namingSuffix}-infra-profile'
+        accessMode: 'Enforced'
+      }
+    ]
+    profiles: [
+      {
+        name: 'nsp-${namingSuffix}-infra-profile'
+        accessRules: [
+          {
+            name: 'inbound'
+            direction: 'Inbound'
+            subscriptions: [
+              {
+                id: subscription().subscriptionId
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 }
 
