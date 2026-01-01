@@ -315,6 +315,7 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
       {
         name: 'cache-volume'
         storageType: 'AzureFile'
+        storageName: 'cache-share'
       }
     ]
     scaleSettings: {
@@ -432,6 +433,8 @@ module containerAppAstro 'br/public:avm/res/app/container-app:0.19.0' = {
     environmentResourceId: appsEnvironment.outputs.resourceId
   }
 }
+
+
 
 output foundryEndpoint string = foundry.outputs.foundryEndpoint
 output acrName string = acr.outputs.name
