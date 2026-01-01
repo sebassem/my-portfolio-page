@@ -209,6 +209,7 @@ module appsEnvironment 'modules/managed-app-env.bicep' = {
     appEnvironmentStorageName: 'cache-storage'
     shareName: 'cache-share'
     storageAccountName: storageAccount.outputs.name
+    storageAccountKey: storageAccount.outputs.primaryAccessKey
   }
 }
 

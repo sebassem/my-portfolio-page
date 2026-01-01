@@ -8,6 +8,9 @@ param storageAccountName string
 
 param appEnvironmentStorageName string
 
+@secure()
+param storageAccountKey string
+
 resource appEnvironment 'Microsoft.App/managedEnvironments@2025-10-02-preview' = {
   name: appEnvironmentName
   location: location
@@ -28,6 +31,7 @@ resource appEnvironmentStorage 'Microsoft.App/managedEnvironments/storages@2025-
       shareName: shareName
       accessMode: 'ReadWrite'
       accountName: storageAccountName
+      accountKey: storageAccountKey
     }
   }
 }
