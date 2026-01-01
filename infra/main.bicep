@@ -202,7 +202,17 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.13.3' = {
   }
 }
 
-module appsEnvironment 'br/public:avm/res/app/managed-environment:0.11.3' = {
+module appsEnvironment 'modules/managed-app-env.bicep' = {
+  scope: rg
+  params: {
+    appEnvironmentName: containerAppsEnvironmentName
+    appEnvironmentStorageName: 'cache-storage'
+    shareName: 'cache-share'
+    storageAccountName: storageAccount.outputs.name
+  }
+}
+
+/*module appsEnvironment 'br/public:avm/res/app/managed-environment:0.11.3' = {
   scope: rg
   params: {
     name: containerAppsEnvironmentName
@@ -219,7 +229,7 @@ module appsEnvironment 'br/public:avm/res/app/managed-environment:0.11.3' = {
       }
     ]
   }
-}
+}*/
 
 module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
   scope: rg
@@ -315,7 +325,7 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
       {
         name: 'cache-volume'
         storageType: 'AzureFile'
-        storageName: 'cache-share'
+        storageName: appsEnvironment.outputs.appEnvironmentStorageName
       }
     ]
     scaleSettings: {
@@ -333,7 +343,7 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
         }
       ]
     }
-    environmentResourceId: appsEnvironment.outputs.resourceId
+    environmentResourceId: appsEnvironment.outputs.appEnvironmentResourceId
     identitySettings: [
       {
         identity: containerAppsIdentity.outputs.resourceId
@@ -430,10 +440,33 @@ module containerAppAstro 'br/public:avm/res/app/container-app:0.19.0' = {
         }
       ]
     }
-    environmentResourceId: appsEnvironment.outputs.resourceId
+    environmentResourceId: appsEnvironment.outputs.appEnvironmentResourceId
   }
 }
 
+module nsp 'br/public:avm/res/network/network-security-perimeter:0.1.3' = {
+  scope: rg
+  params: {
+    name: 'nsp-${namingSuffix}-infra'
+    location: location
+    profiles: [
+      {
+        name: 'nsp-${namingSuffix}-profile'
+        accessRules: [
+          {
+            name: 'inbound'
+            direction: 'Inbound'
+            subscriptions: [
+              {
+                id: subscription().subscriptionId
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
 
 
 output foundryEndpoint string = foundry.outputs.foundryEndpoint
