@@ -2,7 +2,7 @@ using './main.bicep'
 
 param location = 'swedencentral'
 param namingSuffix = 'sbm'
-param aiSearchSku = 'basic'
+param aiSearchSku = 'free'
 param deployments = [
   {
     name: 'llm-deployment'
@@ -25,7 +25,7 @@ param deployments = [
     }
     sku: {
       capacity: 150
-      name: 'Standard'
+      name: 'GlobalStandard'
     }
   }
 ]
