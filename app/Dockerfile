@@ -23,7 +23,7 @@ COPY requirements.txt .
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 RUN pip install --upgrade pip && \
-    pip install -r requirements-litellm.txt && \
+    pip install -r requirements.txt && \
     # Clean up unnecessary files to reduce size
     find /opt/venv -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true && \
     find /opt/venv -type f -name "*.pyc" -delete && \
