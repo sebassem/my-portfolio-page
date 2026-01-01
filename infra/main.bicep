@@ -448,7 +448,7 @@ module nsp 'br/public:avm/res/network/network-security-perimeter:0.1.3' = {
             direction: 'Inbound'
             subscriptions: [
               {
-                id: subscription().subscriptionId
+                id: subscription().id
               }
             ]
           }
