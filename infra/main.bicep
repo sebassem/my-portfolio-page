@@ -416,27 +416,22 @@ module nsp 'br/public:avm/res/network/network-security-perimeter:0.1.3' = {
       {
         privateLinkResource: keyVault.outputs.resourceId
         profile: 'nsp-${namingSuffix}-infra-profile'
-        accessMode: 'Enforced'
+        accessMode: 'Learning'
       }
       {
         privateLinkResource: storageAccount.outputs.resourceId
         profile: 'nsp-${namingSuffix}-infra-profile'
-        accessMode: 'Enforced'
-      }
-      {
-        privateLinkResource: aiSearch.outputs.resourceId
-        profile: 'nsp-${namingSuffix}-infra-profile'
-        accessMode: 'Enforced'
+        accessMode: 'Learning'
       }
       {
         privateLinkResource: foundry.outputs.foundryProjectResourceId
         profile: 'nsp-${namingSuffix}-infra-profile'
-        accessMode: 'Enforced'
+        accessMode: 'Learning'
       }
       {
         privateLinkResource: acr.outputs.resourceId
         profile: 'nsp-${namingSuffix}-infra-profile'
-        accessMode: 'Enforced'
+        accessMode: 'Learning'
       }
     ]
     profiles: [
