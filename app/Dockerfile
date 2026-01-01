@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy only requirements first to leverage Docker cache
-COPY requirements-litellm.txt .
+COPY requirements.txt .
 
 # Install Python dependencies into a virtual environment
 RUN python -m venv /opt/venv
