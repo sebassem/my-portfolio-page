@@ -1,13 +1,5 @@
 """
 Simplified AI Assistant API using Azure SDK + LiteLLM
-
-This is an alternative implementation to portfolio_api.py that:
-- Uses direct Azure SDK calls (no LangChain/LangGraph abstraction)
-- Uses LiteLLM for AI gateway features (caching, retries, fallbacks)
-- Has fewer dependencies and faster cold starts
-
-To switch back to LangGraph version, use portfolio_api.py instead.
-
 Caching:
 - Default: In-memory local cache (works with scale-to-zero, resets on cold start)
 - Optional: Disk cache with Azure Files mount for persistent caching (see code comments)
@@ -62,7 +54,7 @@ openai_token_provider = get_bearer_token_provider(
     credential, "https://cognitiveservices.azure.com/.default"
 )
 
-# Azure AI Search - Direct SDK (replaces LangChain AzureAISearchRetriever)
+# Azure AI Search
 search_client = SearchClient(
     endpoint=f"https://{os.getenv('AZURE_SEARCH_INSTANCE_NAME')}.search.windows.net",
     index_name=os.getenv("AZURE_SEARCH_INDEX_NAME"),
@@ -105,14 +97,12 @@ litellm.enable_cache()
 
 
 # =============================================================================
-# Core Functions (Direct SDK calls, no LangChain)
+# Core Functions
 # =============================================================================
 
 def retrieve_context(query: str, top_k: int = 3) -> str:
     """
     Retrieve relevant documents from Azure AI Search.
-    
-    This replaces LangChain's AzureAISearchRetriever with direct SDK calls.
     """
     try:
         results = search_client.search(
@@ -142,7 +132,7 @@ async def get_ai_response(question: str) -> dict:
     # Retrieve context from Azure AI Search
     context = retrieve_context(question)
     
-    # Build messages (plain dicts instead of LangChain message types)
+    # Build messages
     system_prompt = ASSISTANT_PROMPT.format(context=context)
     messages = [
         {"role": "system", "content": system_prompt},
