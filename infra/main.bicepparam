@@ -12,7 +12,7 @@ param deployments = [
       version: '7'
     }
     sku: {
-      capacity: 250
+      capacity: 1
       name: 'GlobalStandard'
     }
   }
