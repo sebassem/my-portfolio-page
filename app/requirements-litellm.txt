@@ -1,0 +1,13 @@
+# Requirements for litellm_app.py (simplified implementation)
+openai>=1.0.0
+pydantic==2.12.5
+pyyaml==6.0.2
+azure-identity==1.26.0b1
+azure-search-documents==11.6.0
+fastapi==0.128.0
+uvicorn[standard]==0.40.0
+litellm>=1.40.0
+python-dotenv>=1.0.0
+
+# Optional: For Redis caching (recommended for production)
+# redis>=5.0.0

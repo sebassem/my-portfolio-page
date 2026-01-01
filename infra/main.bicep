@@ -79,6 +79,22 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.31.0' = {
     publicNetworkAccess: 'Enabled'
     allowSharedKeyAccess: false
     minimumTlsVersion: 'TLS1_2'
+    fileServices: {
+      shares: [
+        {
+          name: 'cache-share'
+          accessTier: 'Cool'
+          enabledProtocols: 'SMB'
+          roleAssignments: [
+            {
+              principalId: containerAppsIdentity.outputs.principalId
+              roleDefinitionIdOrName: '0c867c2a-1d8c-454a-a3db-ab2ea1bdc8bb'
+              description: 'Storage File Data SMB Share Contributor'
+            }
+          ]
+        }
+      ]
+    }
     roleAssignments: [
       {
         principalId: aiSearch.outputs.?systemAssignedMIPrincipalId ?? ''
@@ -89,11 +105,6 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.31.0' = {
         principalId: containerAppsIdentity.outputs.principalId
         roleDefinitionIdOrName: '/providers/Microsoft.Authorization/roleDefinitions/2a2b9908-6ea1-4ae2-8e65-a410df84e7d1'
         description: 'Storage Blob Data Reader'
-      }
-      {
-        principalId: deployer().objectId
-        roleDefinitionIdOrName: '/providers/Microsoft.Authorization/roleDefinitions/ba92f5b4-2d11-453d-a403-e96b0029c9fe'
-        description: 'Storage Blob Data Contributor'
       }
     ]
   }
@@ -148,11 +159,6 @@ module aiSearch 'br/public:avm/res/search/search-service:0.12.0' = {
         roleDefinitionIdOrName: '/providers/Microsoft.Authorization/roleDefinitions/1407120a-92aa-4202-b7e9-c0e197c71c8f'
         description: 'Search Index Data Reader'
       }
-      {
-        principalId: deployer().objectId
-        roleDefinitionIdOrName: '/providers/Microsoft.Authorization/roleDefinitions/1407120a-92aa-4202-b7e9-c0e197c71c8f'
-        description: 'Search Index Data Reader'
-      }
     ]
   }
 }
@@ -181,22 +187,12 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.13.3' = {
       }
       {
         name: 'ragindexname'
-        value: 'rag-1767182807212'
+        value: 'portfolio-rag-index'
       }
     ]
     roleAssignments: [
       {
         principalId: containerAppsIdentity.outputs.principalId
-        roleDefinitionIdOrName: '/providers/Microsoft.Authorization/roleDefinitions/4633458b-17de-408a-b874-0445c86b69e6'
-        description: 'Key Vault Secrets User'
-      }
-      {
-        principalId: deployer().objectId
-        roleDefinitionIdOrName: '/providers/Microsoft.Authorization/roleDefinitions/00482a5a-887f-4fb3-b363-3b7fe8e74483'
-        description: 'Key Vault Administrator'
-      }
-      {
-        principalId: deployer().objectId
         roleDefinitionIdOrName: '/providers/Microsoft.Authorization/roleDefinitions/4633458b-17de-408a-b874-0445c86b69e6'
         description: 'Key Vault Secrets User'
       }
@@ -212,6 +208,14 @@ module appsEnvironment 'br/public:avm/res/app/managed-environment:0.11.3' = {
     publicNetworkAccess: 'Enabled'
     zoneRedundant: false
     internal: false
+    storages: [
+      {
+        kind: 'NFS'
+        accessMode: 'ReadWrite'
+        shareName: 'cache-share'
+        storageAccountName: storageAccount.outputs.name
+      }
+    ]
   }
 }
 
@@ -242,6 +246,12 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
           cpu: json('0.25')
           memory: '0.5Gi'
         }
+        volumeMounts: [
+          {
+            volumeName: 'cache-volume'
+            mountPath: '/mnt/cache'
+          }
+        ]
         env: [
           {
             name: 'AZURE_CLIENT_ID'

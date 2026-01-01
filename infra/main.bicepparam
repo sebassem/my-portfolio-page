@@ -7,12 +7,12 @@ param deployments = [
   {
     name: 'llm-deployment'
     model: {
-      format: 'Microsoft'
-      name: 'Phi-4'
-      version: '7'
+      format: 'DeepSeek'
+      name: 'DeepSeek-V3.2'
+      version: '1'
     }
     sku: {
-      capacity: 1
+      capacity: 250
       name: 'GlobalStandard'
     }
   }
@@ -20,11 +20,11 @@ param deployments = [
     name: 'embedding-deployment'
     model: {
       format: 'OpenAI'
-      name: 'text-embedding-ada-002'
-      version: '2'
+      name: 'text-embedding-3-small'
+      version: '1'
     }
     sku: {
-      capacity: 3
+      capacity: 150
       name: 'Standard'
     }
   }

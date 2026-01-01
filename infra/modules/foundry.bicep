@@ -104,7 +104,7 @@ module searchFoundryRoleAssignment 'br/public:avm/ptn/authorization/resource-rol
 module containerAppsFoundryRoleAssignment 'br/public:avm/ptn/authorization/resource-role-assignment:0.1.2' = {
   params: {
     principalId: containerAppsPrincipalId
-    resourceId: foundryProject.id
+    resourceId: foundry.id
     roleDefinitionId: '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
     description: 'Cognitive Services OpenAI User'
   }
