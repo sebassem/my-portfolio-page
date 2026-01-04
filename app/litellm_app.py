@@ -280,26 +280,45 @@ async def stream_ai_response(question: str):
             timeout=60,             # Longer timeout for streaming
         )
         
-        # Collect full response to check for OFF_TOPIC
-        full_response = ""
+        # Buffer initial chunks to detect OFF_TOPIC before streaming
+        buffer = ""
+        buffer_limit = 20  # Check first ~20 chars for OFF_TOPIC
+        streaming_started = False
+        
         async for chunk in response:
             if chunk.choices and chunk.choices[0].delta.content:
                 content = chunk.choices[0].delta.content
-                full_response += content
+                
+                if not streaming_started:
+                    buffer += content
+                    # Check if we have enough to determine if it's OFF_TOPIC
+                    if len(buffer) >= buffer_limit or "OFF_TOPIC" in buffer:
+                        if buffer.strip().startswith("OFF_TOPIC"):
+                            # It's off-topic, return fun message instead
+                            fun_message = random.choice(FUN_MESSAGES)
+                            yield f"data: {json.dumps({'content': fun_message})}\n\n"
+                            yield f"data: {json.dumps({'done': True, 'is_job_related': False})}\n\n"
+                            return
+                        else:
+                            # Not off-topic, stream the buffer and continue
+                            streaming_started = True
+                            yield f"data: {json.dumps({'content': buffer})}\n\n"
+                else:
+                    # Normal streaming
+                    yield f"data: {json.dumps({'content': content})}\n\n"
         
-        # Check if the response is off-topic
-        is_off_topic = full_response.strip() == "OFF_TOPIC" or full_response.strip().startswith("OFF_TOPIC")
+        # If we never started streaming (very short response), send the buffer
+        if not streaming_started and buffer:
+            if buffer.strip().startswith("OFF_TOPIC"):
+                fun_message = random.choice(FUN_MESSAGES)
+                yield f"data: {json.dumps({'content': fun_message})}\n\n"
+                yield f"data: {json.dumps({'done': True, 'is_job_related': False})}\n\n"
+                return
+            else:
+                yield f"data: {json.dumps({'content': buffer})}\n\n"
         
-        if is_off_topic:
-            # Return a fun message instead of "OFF_TOPIC"
-            fun_message = random.choice(FUN_MESSAGES)
-            yield f"data: {json.dumps({'content': fun_message})}\n\n"
-            yield f"data: {json.dumps({'done': True, 'is_job_related': False})}\n\n"
-        else:
-            # Stream the actual response
-            yield f"data: {json.dumps({'content': full_response})}\n\n"
-            # Send done event
-            yield f"data: {json.dumps({'done': True})}\n\n"
+        # Send done event
+        yield f"data: {json.dumps({'done': True})}\n\n"
         
     except litellm.RateLimitError:
         print("Hit LiteLLM rate limit during streaming")
