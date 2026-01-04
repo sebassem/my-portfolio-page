@@ -93,6 +93,11 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.31.0' = {
         roleDefinitionIdOrName: '/providers/Microsoft.Authorization/roleDefinitions/2a2b9908-6ea1-4ae2-8e65-a410df84e7d1'
         description: 'Storage Blob Data Reader'
       }
+      {
+        principalId: containerAppsIdentity.outputs.principalId
+        roleDefinitionIdOrName: '/providers/Microsoft.Authorization/roleDefinitions/0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3'
+        description: 'Storage Table Data Contributor'
+      }
     ]
   }
 }
