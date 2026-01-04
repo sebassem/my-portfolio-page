@@ -38,8 +38,9 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
-from slowapi import Limiter
+from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 
 # Load environment variables from .env file (for local development)
@@ -748,6 +749,7 @@ async def custom_rate_limit_handler(request: Request, exc: RateLimitExceeded) ->
 
 # Register rate limiter middleware
 app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
 app.add_exception_handler(RateLimitExceeded, custom_rate_limit_handler)
 
 # Note: CORS not configured - this API is internal-only (ingressExternal: false)
