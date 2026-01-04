@@ -334,6 +334,18 @@ class AzureTableStorage(Storage):
         """Clear a specific key."""
         self._delete_entity(key)
     
+    @property
+    def base_exceptions(self) -> Tuple[type, ...]:
+        """
+        Return tuple of exceptions that should trigger a fallback to in-memory storage.
+        
+        Required by the limits library Storage base class.
+        
+        Returns:
+            Tuple of exception types
+        """
+        return (Exception,)
+    
     def get_moving_window(self, key: str, limit: int, expiry: int) -> Tuple[int, int]:
         """
         Get the moving window information for a key.
