@@ -1,0 +1,48 @@
+---
+// Cloud & DevOps expertise logos
+import svgAzure from "../assets/cloud/azure-original.svg";
+import svgAks from "../assets/cloud/aks.svg";
+import svgAzureArc from "../assets/cloud/azure-arc.svg";
+import svgKubernetes from "../assets/cloud/kubernetes-original.svg";
+import svgGithub from "../assets/cloud/github-original.svg";
+import svgPowershell from "../assets/cloud/powershell-original.svg";
+import svgAiOps from "../assets/cloud/ai-ops.svg";
+import svgFoundry from "../assets/cloud/microsoft-foundry.svg";
+import svgBicep from "../assets/cloud/bicep.png";
+
+const tools = [
+  { name: "Azure", icon: svgAzure },
+  { name: "AKS", icon: svgAks },
+  { name: "Azure Arc", icon: svgAzureArc },
+  { name: "Kubernetes", icon: svgKubernetes },
+  { name: "GitHub", icon: svgGithub },
+  { name: "PowerShell", icon: svgPowershell },
+  { name: "AI Ops", icon: svgAiOps },
+  { name: "AI Foundry", icon: svgFoundry },
+  { name: "Bicep", icon: svgBicep },
+];
+---
+
+<section class="py-5 px-5 bg-white border-y-2 border-black">
+  <div class="max-w-5xl mx-auto">
+    <p class="text-center text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">
+      Technologies I work with
+    </p>
+    <div class="flex flex-wrap justify-center items-center gap-8 md:gap-12">
+      {tools.map((tool) => (
+        <div class="group flex flex-col items-center gap-2 transition-transform hover:scale-110">
+          <img 
+            src={tool.icon.src} 
+            alt={tool.name} 
+            width="48" 
+            height="48"
+            class="transition-all duration-300"
+          />
+          <span class="text-xs text-gray-600 group-hover:text-black transition-colors">
+            {tool.name}
+          </span>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
