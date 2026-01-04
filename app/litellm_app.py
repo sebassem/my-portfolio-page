@@ -1,128 +1,96 @@
 """
-Simplified AI Assistant API using Azure SDK + LiteLLM
+Seif's AI Assistant API
+=======================
+A FastAPI-based AI assistant that answers questions about Seif's professional expertise.
+
+Architecture:
+- Azure AI Search for RAG (Retrieval Augmented Generation)
+- Azure OpenAI via LiteLLM for LLM inference
+- Server-Sent Events (SSE) for real-time streaming responses
+
 Caching:
 - Default: In-memory local cache (works with scale-to-zero, resets on cold start)
-- Optional: Disk cache with Azure Files mount for persistent caching (see code comments)
+- Optional: Disk cache with Azure Files mount for persistent caching
 """
 
+import json
 import os
-import re
 import random
+import re
 from pathlib import Path
-from typing import Tuple
+from typing import AsyncGenerator, Dict, List, Tuple
 
-import yaml
 import litellm
+import yaml
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from azure.search.documents import SearchClient
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
+# Load environment variables from .env file (for local development)
 load_dotenv()
 
 
 # =============================================================================
-# Load Prompts from External Configuration
+# Configuration Constants
 # =============================================================================
 
-def load_prompts(prompts_path: str = None) -> dict:
-    """
-    Load prompts from external YAML file.
-    Path can be overridden via PROMPTS_FILE_PATH environment variable.
-    """
-    if prompts_path is None:
-        prompts_path = os.getenv("PROMPTS_FILE_PATH", Path(__file__).parent / "prompts.yaml")
-
-    with open(prompts_path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
-
-
-# Load prompts at startup
-PROMPTS = load_prompts()
-ASSISTANT_PROMPT = PROMPTS["assistant_prompt"]
-
-
-# =============================================================================
-# Azure Clients Configuration (Direct SDK)
-# =============================================================================
-
-# DefaultAzureCredential tries multiple auth methods in order:
-# Environment -> Workload Identity -> Managed Identity -> Azure CLI -> Azure PowerShell -> Azure Developer CLI
-credential = DefaultAzureCredential()
-
-# Token provider for Azure OpenAI
-openai_token_provider = get_bearer_token_provider(
-    credential, "https://cognitiveservices.azure.com/.default"
-)
-
-# Azure AI Search
-search_client = SearchClient(
-    endpoint=f"https://{os.getenv('AZURE_SEARCH_INSTANCE_NAME')}.search.windows.net",
-    index_name=os.getenv("AZURE_SEARCH_INDEX_NAME"),
-    credential=credential
-)
-
-# Azure OpenAI configuration for LiteLLM
-AZURE_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
-DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_RESPONSES_DEPLOYMENT_NAME")
-
-
-# =============================================================================
-# LiteLLM Configuration
-# =============================================================================
-
-# Cache TTL in seconds (default: 1 hour)
+# Cache time-to-live in seconds (default: 1 hour)
 CACHE_TTL = int(os.getenv("CACHE_TTL_SECONDS", "3600"))
 
-# Default: in-memory local cache
-# This works well for single-instance deployments and scale-to-zero scenarios
-# Cache resets on cold start, but provides fast responses for repeated questions within a session
-litellm.cache = litellm.Cache(type="local", ttl=CACHE_TTL)
-
-# -----------------------------------------------------------------------------
-# OPTIONAL: Persistent Disk Cache with Azure Files Mount
-# -----------------------------------------------------------------------------
-# To enable disk caching with Azure Files, uncomment below and configure
-# the volume mount in your Container App Bicep (requires shared key access on storage)
-#
-# litellm.cache = litellm.Cache(
-#     type="disk",
-#     disk_cache_dir="/mnt/cache",
-#     ttl=CACHE_TTL
-# )
-
-# Enable caching globally
-litellm.enable_cache()
-
-# Set callbacks for logging (optional)
-# litellm.success_callback = ["langfuse"]  # Uncomment for observability
-
-
-# =============================================================================
-# Rate Limiting (SlowAPI) & Input Sanitization
-# =============================================================================
-
-# Custom key function to handle X-Forwarded-For from Container Apps proxy
-def get_client_ip(request: Request) -> str:
-    """Extract client IP, handling proxies."""
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return get_remote_address(request)
-
-# Initialize rate limiter with in-memory storage (resets on restart, fine for scale-to-zero)
-# Rate limit: 10 requests per minute per IP (configurable via env)
+# Rate limit for API requests (default: 10 requests per minute per IP)
 RATE_LIMIT = os.getenv("RATE_LIMIT", "10/minute")
-limiter = Limiter(key_func=get_client_ip)
 
-# Patterns that might indicate prompt injection or malicious input
-# Note: LiteLLM's moderation() is for harmful content, not prompt injection
-SUSPICIOUS_PATTERNS = [
+# Maximum question length (matches client-side validation)
+MAX_QUESTION_LENGTH = 4000
+
+# Number of documents to retrieve from search
+SEARCH_TOP_K = 3
+
+# Buffer size for detecting OFF_TOPIC responses before streaming
+OFF_TOPIC_BUFFER_SIZE = 20
+
+
+# =============================================================================
+# Response Messages
+# =============================================================================
+
+# Fun messages for non-job-related (off-topic) queries
+FUN_MESSAGES: List[str] = [
+    "🤖 Beep boop! That's not quite what I'm trained for. Try asking about Seif's professional expertise instead!",
+    "🎮 Nice try! But I'm here to talk about jobs and careers, not to play games. Ask me about Seif's skills!",
+    "🌟 Interesting question! But let's keep it professional. What would you like to know about Seif's experience?",
+    "🚀 I'm an expert on Seif's career, not a general chatbot. Fire away with a job-related question!",
+    "💼 My specialty is matching Seif's skills to your needs. Got a job description or career question?",
+    "🎯 Off-topic alert! I'm laser-focused on helping you understand how Seif can contribute to your team.",
+    "☕ That's a fun question, but I'm caffeinated only for career conversations. What role are you hiring for?",
+    "🔮 My crystal ball only shows career paths! Ask me about Seif's professional background instead.",
+]
+
+# Fun messages for rate limit errors (Azure OpenAI 429 responses)
+GPU_OVERLOAD_MESSAGES: List[str] = [
+    "🔥 Whoa there! The GPUs are literally on fire right now. Those things are expensive! Give it a couple of minutes or reach out to Seif directly at seif@yourlink.com",
+    "💸 Plot twist: GPUs cost more than my coffee addiction! Azure OpenAI needs a breather. Try again in a few minutes or just email Seif!",
+    "🦾 The AI hamsters powering this thing need a water break. GPUs are pricey, you know! Wait a bit or contact Seif the old-fashioned way.",
+    "⚡ Too many brain cells activated at once! The Azure OpenAI servers are sweating. Try again shortly or slide into Seif's inbox directly.",
+    "🎰 You hit the jackpot... of rate limits! GPUs don't grow on trees. Give it 2 minutes or reach out to Seif - he's friendlier than this error anyway!",
+    "🐢 Slow down, speed racer! The AI needs to catch its breath (and Azure needs to cool those expensive GPUs). Try again soon or contact Seif directly!",
+    "💰 Fun fact: Every GPU cycle costs money, and we just ran out of cycles! Please try again in a couple minutes, or just reach out to Seif directly.",
+    "🤯 The AI brain is overheating! Those GPUs are working overtime. Take a breather and try again, or skip the middleman and contact Seif!",
+]
+
+
+# =============================================================================
+# Prompt Injection Detection Patterns
+# =============================================================================
+
+# Regex patterns that may indicate prompt injection attempts
+SUSPICIOUS_PATTERNS: List[str] = [
     r"ignore\s+(previous|above|all)\s+instructions?",
     r"disregard\s+(previous|above|all)",
     r"forget\s+(everything|previous|above)",
@@ -135,44 +103,223 @@ SUSPICIOUS_PATTERNS = [
     r"\$\{.*\}",    # Variable injection
 ]
 
-# Compile patterns for performance
+# Pre-compile patterns for better performance
 COMPILED_PATTERNS = [re.compile(p, re.IGNORECASE) for p in SUSPICIOUS_PATTERNS]
 
 
-def sanitize_input(text: str) -> Tuple[str, bool]:
+# =============================================================================
+# Prompt Configuration
+# =============================================================================
+
+def load_prompts(prompts_path: str = None) -> Dict:
     """
-    Sanitize user input to prevent prompt injection attacks.
+    Load system prompts from external YAML configuration file.
+    
+    Args:
+        prompts_path: Path to YAML file. Defaults to PROMPTS_FILE_PATH env var
+                      or prompts.yaml in the same directory.
     
     Returns:
+        Dictionary containing prompt configurations.
+    """
+    if prompts_path is None:
+        prompts_path = os.getenv("PROMPTS_FILE_PATH", Path(__file__).parent / "prompts.yaml")
+
+    with open(prompts_path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+# Load prompts at module startup
+PROMPTS = load_prompts()
+ASSISTANT_PROMPT = PROMPTS["assistant_prompt"]
+
+
+# =============================================================================
+# Azure Services Configuration
+# =============================================================================
+
+# DefaultAzureCredential authentication chain:
+# Environment -> Workload Identity -> Managed Identity -> Azure CLI -> PowerShell -> Azure Developer CLI
+credential = DefaultAzureCredential()
+
+# Token provider for Azure OpenAI (returns fresh tokens automatically)
+openai_token_provider = get_bearer_token_provider(
+    credential, "https://cognitiveservices.azure.com/.default"
+)
+
+# Azure AI Search client for RAG context retrieval
+search_client = SearchClient(
+    endpoint=f"https://{os.getenv('AZURE_SEARCH_INSTANCE_NAME')}.search.windows.net",
+    index_name=os.getenv("AZURE_SEARCH_INDEX_NAME"),
+    credential=credential
+)
+
+# Azure OpenAI configuration
+AZURE_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
+DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_RESPONSES_DEPLOYMENT_NAME")
+
+
+# =============================================================================
+# LiteLLM Configuration
+# =============================================================================
+
+# Configure in-memory cache for response caching
+# Note: Cache resets on cold start but provides fast responses for repeated questions
+litellm.cache = litellm.Cache(type="local", ttl=CACHE_TTL)
+
+# Optional: Persistent disk cache with Azure Files mount
+# Uncomment and configure volume mount in Container App Bicep for persistence:
+# litellm.cache = litellm.Cache(type="disk", disk_cache_dir="/mnt/cache", ttl=CACHE_TTL)
+
+# Enable caching globally
+litellm.enable_cache()
+
+
+# =============================================================================
+# Rate Limiting Configuration
+# =============================================================================
+
+def get_client_ip(request: Request) -> str:
+    """
+    Extract the real client IP address, handling reverse proxy headers.
+    
+    Container Apps and other proxies add X-Forwarded-For header with the
+    original client IP as the first value in the comma-separated list.
+    
+    Args:
+        request: FastAPI request object
+        
+    Returns:
+        Client IP address string
+    """
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        # First IP in the list is the original client
+        return forwarded.split(",")[0].strip()
+    return get_remote_address(request)
+
+
+# Initialize rate limiter (in-memory storage, resets on restart)
+limiter = Limiter(key_func=get_client_ip)
+
+
+# =============================================================================
+# Input Sanitization
+# =============================================================================
+
+def sanitize_input(text: str) -> Tuple[str, bool]:
+    """
+    Sanitize user input and detect potential prompt injection attacks.
+    
+    Performs the following checks and transformations:
+    1. Checks for suspicious patterns that may indicate prompt injection
+    2. Removes non-printable control characters (except newlines/tabs)
+    3. Normalizes excessive whitespace
+    
+    Args:
+        text: Raw user input string
+        
+    Returns:
         Tuple of (sanitized_text, is_suspicious)
+        - sanitized_text: Cleaned input string
+        - is_suspicious: True if prompt injection patterns were detected
     """
     # Check for suspicious patterns
     for pattern in COMPILED_PATTERNS:
         if pattern.search(text):
             return text, True
     
-    # Remove potential control characters (except newlines and tabs)
+    # Remove non-printable control characters (preserve newlines and tabs)
     sanitized = ''.join(char for char in text if char.isprintable() or char in '\n\t')
     
-    # Normalize excessive whitespace
+    # Collapse excessive whitespace (10+ consecutive spaces)
     sanitized = re.sub(r'\s{10,}', ' ', sanitized)
     
     return sanitized, False
 
 
 # =============================================================================
-# Core Functions
+# SSE (Server-Sent Events) Helpers
 # =============================================================================
 
-def retrieve_context(query: str, top_k: int = 3) -> str:
+def sse_message(content: str = None, done: bool = False, is_job_related: bool = True, error: str = None) -> str:
     """
-    Retrieve relevant documents from Azure AI Search.
+    Format a Server-Sent Event message.
+    
+    Args:
+        content: Text content to stream
+        done: Whether this is the final message
+        is_job_related: Whether the response was job-related (for analytics)
+        error: Error type if an error occurred
+        
+    Returns:
+        SSE-formatted string (data: {...}\n\n)
+    """
+    data = {}
+    if content is not None:
+        data["content"] = content
+    if done:
+        data["done"] = True
+        data["is_job_related"] = is_job_related
+    if error:
+        data["error"] = error
+    return f"data: {json.dumps(data)}\n\n"
+
+
+async def create_fun_message_stream(is_job_related: bool = False) -> AsyncGenerator[str, None]:
+    """
+    Create an SSE stream that returns a random fun message.
+    
+    Used for off-topic questions and suspicious input.
+    
+    Args:
+        is_job_related: Flag indicating if response is job-related
+        
+    Yields:
+        SSE-formatted messages
+    """
+    message = random.choice(FUN_MESSAGES)
+    yield sse_message(content=message)
+    yield sse_message(done=True, is_job_related=is_job_related)
+
+
+def get_sse_headers() -> Dict[str, str]:
+    """
+    Get standard headers for SSE streaming responses.
+    
+    Returns:
+        Dictionary of HTTP headers optimized for SSE
+    """
+    return {
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",  # Disable nginx/proxy buffering
+    }
+
+
+# =============================================================================
+# Core AI Functions
+# =============================================================================
+
+def retrieve_context(query: str, top_k: int = SEARCH_TOP_K) -> str:
+    """
+    Retrieve relevant document chunks from Azure AI Search.
+    
+    Performs a semantic/hybrid search to find the most relevant
+    portfolio content for the user's question.
+    
+    Args:
+        query: User's question
+        top_k: Number of documents to retrieve
+        
+    Returns:
+        Concatenated document chunks as context string
     """
     try:
         results = search_client.search(
             search_text=query,
             top=top_k,
-            select=["chunk"]  # Adjust field name based on your index schema
+            select=["chunk"]  # Field name from search index schema
         )
         chunks = [doc["chunk"] for doc in results if "chunk" in doc]
         return "\n\n".join(chunks)
@@ -181,22 +328,46 @@ def retrieve_context(query: str, top_k: int = 3) -> str:
         return ""
 
 
-async def get_ai_response(question: str) -> dict:
+def is_rate_limit_error(exception: Exception) -> bool:
     """
-    Single function that retrieves context and gets LLM response.
+    Check if an exception indicates a rate limit error.
     
-    LiteLLM handles:
-    - Response caching (identical questions return cached response instantly)
-    - Automatic retries with exponential backoff
-    - Rate limit handling
-    - Token counting and cost tracking
+    Azure OpenAI returns 429 status codes when rate limited.
     
-    Returns dict with: response, is_job_related, rate_limited
+    Args:
+        exception: The caught exception
+        
+    Returns:
+        True if this is a rate limit error
     """
-    # Retrieve context from Azure AI Search
+    if isinstance(exception, litellm.RateLimitError):
+        return True
+    error_str = str(exception).lower()
+    return "429" in error_str or "rate limit" in error_str
+
+
+async def stream_ai_response(question: str) -> AsyncGenerator[str, None]:
+    """
+    Stream LLM response chunks as Server-Sent Events.
+    
+    This function:
+    1. Retrieves relevant context from Azure AI Search
+    2. Calls Azure OpenAI with streaming enabled
+    3. Buffers initial response to detect OFF_TOPIC before streaming
+    4. Yields SSE-formatted chunks for real-time display
+    
+    Note: Streaming bypasses LiteLLM's response cache.
+    
+    Args:
+        question: User's sanitized question
+        
+    Yields:
+        SSE-formatted message strings
+    """
+    # Step 1: Retrieve relevant context from portfolio documents
     context = retrieve_context(question)
     
-    # Build messages
+    # Step 2: Build the conversation messages
     system_prompt = ASSISTANT_PROMPT.format(context=context)
     messages = [
         {"role": "system", "content": system_prompt},
@@ -204,85 +375,25 @@ async def get_ai_response(question: str) -> dict:
     ]
     
     try:
-        # Get fresh token for this request
+        # Get fresh Azure AD token for this request
         token = openai_token_provider()
         
-        # LiteLLM async completion with caching
-        response = await litellm.acompletion(
-            model=f"azure/{DEPLOYMENT_NAME}",
-            messages=messages,
-            api_base=AZURE_ENDPOINT,
-            api_key=token,  # Azure AD token
-            api_version="2024-05-01-preview",
-            max_tokens=1024,        # Balanced for detailed responses with examples
-            caching=True,           # Enable response caching
-            num_retries=3,          # Auto-retry on transient failures
-            timeout=30,             # Request timeout in seconds
-        )
-        
-        content = response.choices[0].message.content.strip()
-        print(f"LLM response: '{content[:100]}...'")
-        
-        # Check if off-topic
-        is_off_topic = content == "OFF_TOPIC" or content.startswith("OFF_TOPIC")
-        
-        return {
-            "response": content,
-            "is_job_related": not is_off_topic,
-            "rate_limited": False
-        }
-        
-    except litellm.RateLimitError:
-        print("Hit LiteLLM rate limit")
-        return {"response": "", "is_job_related": False, "rate_limited": True}
-    except Exception as e:
-        error_str = str(e).lower()
-        if "429" in error_str or "rate limit" in error_str:
-            print(f"Rate limit error: {e}")
-            return {"response": "", "is_job_related": False, "rate_limited": True}
-        print(f"LLM error: {e}")
-        raise
-
-
-async def stream_ai_response(question: str):
-    """
-    Async generator that streams LLM response chunks.
-    
-    Yields Server-Sent Events (SSE) formatted data.
-    Note: Streaming bypasses caching - each request hits the LLM.
-    """
-    import json
-    
-    # Retrieve context from Azure AI Search
-    context = retrieve_context(question)
-    
-    # Build messages
-    system_prompt = ASSISTANT_PROMPT.format(context=context)
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": question}
-    ]
-    
-    try:
-        # Get fresh token for this request
-        token = openai_token_provider()
-        
-        # LiteLLM async streaming completion
+        # Step 3: Call Azure OpenAI with streaming
         response = await litellm.acompletion(
             model=f"azure/{DEPLOYMENT_NAME}",
             messages=messages,
             api_base=AZURE_ENDPOINT,
             api_key=token,
             api_version="2024-05-01-preview",
-            stream=True,            # Enable streaming
-            max_tokens=1024,        # Balanced for detailed responses with examples
+            stream=True,
+            max_tokens=1024,
             num_retries=3,
-            timeout=60,             # Longer timeout for streaming
+            timeout=60,  # Longer timeout for streaming
         )
         
-        # Buffer initial chunks to detect OFF_TOPIC before streaming
+        # Step 4: Buffer initial chunks to detect OFF_TOPIC
+        # We need to check if the response starts with "OFF_TOPIC" before streaming
         buffer = ""
-        buffer_limit = 20  # Check first ~20 chars for OFF_TOPIC
         streaming_started = False
         
         async for chunk in response:
@@ -290,167 +401,155 @@ async def stream_ai_response(question: str):
                 content = chunk.choices[0].delta.content
                 
                 if not streaming_started:
+                    # Still buffering to detect OFF_TOPIC
                     buffer += content
-                    # Check if we have enough to determine if it's OFF_TOPIC
-                    if len(buffer) >= buffer_limit or "OFF_TOPIC" in buffer:
+                    
+                    # Check if we have enough content to determine if it's off-topic
+                    if len(buffer) >= OFF_TOPIC_BUFFER_SIZE or "OFF_TOPIC" in buffer:
                         if buffer.strip().startswith("OFF_TOPIC"):
-                            # It's off-topic, return fun message instead
-                            fun_message = random.choice(FUN_MESSAGES)
-                            yield f"data: {json.dumps({'content': fun_message})}\n\n"
-                            yield f"data: {json.dumps({'done': True, 'is_job_related': False})}\n\n"
+                            # Off-topic detected: return fun message instead
+                            async for msg in create_fun_message_stream():
+                                yield msg
                             return
                         else:
-                            # Not off-topic, stream the buffer and continue
+                            # Not off-topic: flush buffer and start streaming
                             streaming_started = True
-                            yield f"data: {json.dumps({'content': buffer})}\n\n"
+                            yield sse_message(content=buffer)
                 else:
-                    # Normal streaming
-                    yield f"data: {json.dumps({'content': content})}\n\n"
+                    # Normal streaming mode
+                    yield sse_message(content=content)
         
-        # If we never started streaming (very short response), send the buffer
+        # Handle case where response was shorter than buffer limit
         if not streaming_started and buffer:
             if buffer.strip().startswith("OFF_TOPIC"):
-                fun_message = random.choice(FUN_MESSAGES)
-                yield f"data: {json.dumps({'content': fun_message})}\n\n"
-                yield f"data: {json.dumps({'done': True, 'is_job_related': False})}\n\n"
+                async for msg in create_fun_message_stream():
+                    yield msg
                 return
             else:
-                yield f"data: {json.dumps({'content': buffer})}\n\n"
+                yield sse_message(content=buffer)
         
-        # Send done event
-        yield f"data: {json.dumps({'done': True})}\n\n"
+        # Send completion event
+        yield sse_message(done=True)
         
-    except litellm.RateLimitError:
-        print("Hit LiteLLM rate limit during streaming")
-        yield f"data: {json.dumps({'error': 'rate_limited'})}\n\n"
     except Exception as e:
-        error_str = str(e).lower()
-        if "429" in error_str or "rate limit" in error_str:
+        if is_rate_limit_error(e):
             print(f"Rate limit error during streaming: {e}")
-            yield f"data: {json.dumps({'error': 'rate_limited'})}\n\n"
+            yield sse_message(error="rate_limited")
         else:
             print(f"LLM streaming error: {e}")
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            yield sse_message(error=str(e))
 
 
 # =============================================================================
-# FastAPI Application
+# FastAPI Application Setup
 # =============================================================================
 
 app = FastAPI(
     title="Seif's AI Assistant API",
     description="An API to ask questions about Seif's expertise and contributions",
-    version="2.0.0"  # Bumped version for new implementation
+    version="2.0.0",
 )
 
-# Register rate limiter with FastAPI
+# Register rate limiter middleware
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Note: CORS not needed - this API is internal-only (ingressExternal: false)
-# Only accessible by other containers in the same environment
+# Note: CORS not configured - this API is internal-only (ingressExternal: false)
+# Only accessible by other containers in the same Container Apps environment
 
-# Fun messages for non-job-related queries
-FUN_MESSAGES = [
-    "🤖 Beep boop! That's not quite what I'm trained for. Try asking about Seif's professional expertise instead!",
-    "🎮 Nice try! But I'm here to talk about jobs and careers, not to play games. Ask me about Seif's skills!",
-    "🌟 Interesting question! But let's keep it professional. What would you like to know about Seif's experience?",
-    "🚀 I'm an expert on Seif's career, not a general chatbot. Fire away with a job-related question!",
-    "💼 My specialty is matching Seif's skills to your needs. Got a job description or career question?",
-    "🎯 Off-topic alert! I'm laser-focused on helping you understand how Seif can contribute to your team.",
-    "☕ That's a fun question, but I'm caffeinated only for career conversations. What role are you hiring for?",
-    "🔮 My crystal ball only shows career paths! Ask me about Seif's professional background instead.",
-]
 
-# Fun messages for when Azure OpenAI rate limits us (429 errors)
-GPU_OVERLOAD_MESSAGES = [
-    "🔥 Whoa there! The GPUs are literally on fire right now. Those things are expensive! Give it a couple of minutes or reach out to Seif directly at seif@yourlink.com",
-    "💸 Plot twist: GPUs cost more than my coffee addiction! Azure OpenAI needs a breather. Try again in a few minutes or just email Seif!",
-    "🦾 The AI hamsters powering this thing need a water break. GPUs are pricey, you know! Wait a bit or contact Seif the old-fashioned way.",
-    "⚡ Too many brain cells activated at once! The Azure OpenAI servers are sweating. Try again shortly or slide into Seif's inbox directly.",
-    "🎰 You hit the jackpot... of rate limits! GPUs don't grow on trees. Give it 2 minutes or reach out to Seif - he's friendlier than this error anyway!",
-    "🐢 Slow down, speed racer! The AI needs to catch its breath (and Azure needs to cool those expensive GPUs). Try again soon or contact Seif directly!",
-    "💰 Fun fact: Every GPU cycle costs money, and we just ran out of cycles! Please try again in a couple minutes, or just reach out to Seif directly.",
-    "🤯 The AI brain is overheating! Those GPUs are working overtime. Take a breather and try again, or skip the middleman and contact Seif!",
-]
-
+# =============================================================================
+# Request/Response Models
+# =============================================================================
 
 class QuestionRequest(BaseModel):
-    """Request model for the ask endpoint."""
+    """Request body for the /ask endpoint."""
     question: str
 
 
 class AnswerResponse(BaseModel):
-    """Response model for the ask endpoint."""
+    """Response body for non-streaming responses."""
     answer: str
     is_job_related: bool
 
 
+# =============================================================================
+# API Endpoints
+# =============================================================================
+
 @app.get("/")
-async def root():
-    """Health check endpoint."""
-    return {"status": "healthy", "message": "Seif's AI Assistant is running (LiteLLM)!"}
+async def root() -> Dict[str, str]:
+    """
+    Health check endpoint.
+    
+    Returns:
+        Status message indicating the service is running
+    """
+    return {
+        "status": "healthy",
+        "message": "Seif's AI Assistant is running!"
+    }
 
 
 @app.post("/ask")
 @limiter.limit(RATE_LIMIT)
-async def ask_question(request: Request, question_request: QuestionRequest):
+async def ask_question(request: Request, question_request: QuestionRequest) -> StreamingResponse:
     """
-    Process a question using direct Azure SDK + LiteLLM with streaming.
-
-    Returns a Server-Sent Events (SSE) stream of the LLM response.
-
+    Process a question and stream the AI response.
+    
+    This endpoint:
+    1. Validates and sanitizes the input
+    2. Checks for prompt injection attempts
+    3. Streams the LLM response as Server-Sent Events
+    
     Features:
     - Real-time streaming response (word by word)
     - Automatic retries with exponential backoff
-    - Rate limiting via SlowAPI (10/minute per IP by default)
-    - Input sanitization to prevent prompt injection
+    - Rate limiting (10/minute per IP by default)
+    - Input sanitization for security
     
-    Note: Streaming bypasses response caching.
+    Args:
+        request: FastAPI request object (used for rate limiting)
+        question_request: Request body containing the question
+        
+    Returns:
+        StreamingResponse with SSE-formatted chunks
+        
+    Raises:
+        HTTPException: If question is empty or too long
     """
-    import json
-    
-    # Strip whitespace from input
+    # Validate input
     question = question_request.question.strip()
 
     if not question:
         raise HTTPException(status_code=400, detail="Question cannot be empty")
 
-    # Server-side validation (defense-in-depth, matches client maxlength)
-    if len(question) > 4000:
-        raise HTTPException(status_code=400, detail="Question too long (max 4000 characters)")
+    if len(question) > MAX_QUESTION_LENGTH:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Question too long (max {MAX_QUESTION_LENGTH} characters)"
+        )
     
-    # Sanitize input and check for suspicious patterns
+    # Sanitize input and check for prompt injection
     question, is_suspicious = sanitize_input(question)
     
     if is_suspicious:
-        # Log suspicious input for monitoring (don't expose details to client)
+        # Log for security monitoring (don't expose details to client)
         client_ip = get_client_ip(request)
-        print(f"Suspicious input detected from {client_ip}: {question[:100]}...")
-        # Return fun message as SSE for suspicious input
-        async def suspicious_response():
-            msg = random.choice(FUN_MESSAGES)
-            yield f"data: {json.dumps({'content': msg})}\n\n"
-            yield f"data: {json.dumps({'done': True, 'is_job_related': False})}\n\n"
+        print(f"⚠️ Suspicious input detected from {client_ip}: {question[:100]}...")
+        
+        # Return a fun deflection message
         return StreamingResponse(
-            suspicious_response(),
+            create_fun_message_stream(),
             media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "X-Accel-Buffering": "no",  # Disable nginx buffering
-            }
+            headers=get_sse_headers(),
         )
 
-    # Return streaming response
+    # Stream the AI response
     return StreamingResponse(
         stream_ai_response(question),
         media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",  # Disable nginx buffering
-        }
+        headers=get_sse_headers(),
     )
 
 
