@@ -118,6 +118,13 @@ import svgHl from "../assets/hl.svg";
     document.body.style.overflow = "hidden";
   }
 
+  // Update modal content with streaming text
+  function updateModal(text: string) {
+    if (aiResponseText) {
+      aiResponseText.innerHTML = marked.parse(text) as string;
+    }
+  }
+
   function closeModal() {
     aiModal?.classList.add("hidden");
     document.body.style.overflow = "";
@@ -167,9 +174,36 @@ import svgHl from "../assets/hl.svg";
     askAiBtn.setAttribute("disabled", "true");
 
     try {
-      const data = await askAI(question);
-      const responseText = data.answer || data.message || "No response received";
-      openModal(responseText);
+      let fullResponse = '';
+      let modalOpened = false;
+      
+      // Stream callback - updates the modal in real-time
+      const onChunk = (chunk: string, done: boolean, error?: string) => {
+        if (error) {
+          openModal(`Error: ${error}`);
+          return;
+        }
+        
+        fullResponse += chunk;
+        
+        // Open modal on first chunk
+        if (!modalOpened && fullResponse.length > 0) {
+          aiModal?.classList.remove("hidden");
+          document.body.style.overflow = "hidden";
+          modalOpened = true;
+        }
+        
+        // Update modal content with streaming text
+        updateModal(fullResponse);
+      };
+      
+      const data = await askAI(question, onChunk);
+      
+      // Final update with complete response (in case no streaming occurred)
+      if (!modalOpened) {
+        const responseText = data.answer || data.message || "No response received";
+        openModal(responseText);
+      }
     } catch (error) {
       console.error("Error:", error);
       openModal("An error occurred. Please try again.");
