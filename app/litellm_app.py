@@ -38,7 +38,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
@@ -85,28 +85,16 @@ FUN_MESSAGES: List[str] = [
     "🔮 My crystal ball only shows career paths! Ask me about Seif's professional background instead.",
 ]
 
-# Fun messages for rate limit errors (Azure OpenAI 429 responses)
-GPU_OVERLOAD_MESSAGES: List[str] = [
-    "🔥 Whoa there! The GPUs are literally on fire right now. Those things are expensive! Give it a couple of minutes or reach out to Seif directly at seif@yourlink.com",
-    "💸 Plot twist: GPUs cost more than my coffee addiction! Azure OpenAI needs a breather. Try again in a few minutes or just email Seif!",
-    "🦾 The AI hamsters powering this thing need a water break. GPUs are pricey, you know! Wait a bit or contact Seif the old-fashioned way.",
-    "⚡ Too many brain cells activated at once! The Azure OpenAI servers are sweating. Try again shortly or slide into Seif's inbox directly.",
-    "🎰 You hit the jackpot... of rate limits! GPUs don't grow on trees. Give it 2 minutes or reach out to Seif - he's friendlier than this error anyway!",
-    "🐢 Slow down, speed racer! The AI needs to catch its breath (and Azure needs to cool those expensive GPUs). Try again soon or contact Seif directly!",
-    "💰 Fun fact: Every GPU cycle costs money, and we just ran out of cycles! Please try again in a couple minutes, or just reach out to Seif directly.",
-    "🤯 The AI brain is overheating! Those GPUs are working overtime. Take a breather and try again, or skip the middleman and contact Seif!",
-]
-
-# Fun messages for weekly rate limit exceeded (application-level rate limiting)
-WEEKLY_LIMIT_MESSAGES: List[str] = [
-    "🎫 Whoa, you've used all 3 golden tickets this week! Seif's AI assistant needs a breather. Come back next week or just reach out to Seif directly!",
-    "🏆 Achievement unlocked: Power User! You've hit your 3 questions/week limit. The AI needs to recharge - try again next week or contact Seif!",
-    "📊 Plot twist: You're so curious that you've maxed out your weekly quota! Come back next week, or skip the queue and email Seif directly.",
-    "⏰ Time flies when you're having fun! You've asked 3 questions this week already. The counter resets soon - or just reach out to Seif now!",
-    "🎯 Hat trick! You've hit your 3-question weekly limit. Either you really like this AI, or you really want to hire Seif. Why not contact him directly?",
-    "🔋 Battery low! This AI runs on limited weekly juice (3 questions/week). Recharge next week or go straight to the source - Seif himself!",
-    "🎪 The show's over for this week! You've seen all 3 acts. Come back next week for more, or get a private show by contacting Seif directly!",
-    "🚦 Red light! You've crossed the 3-question finish line this week. Pit stop until next week, or take the direct route to Seif's inbox!",
+# Fun messages for rate limit exceeded (application-level rate limiting)
+RATE_LIMIT_MESSAGES: List[str] = [
+    "🎫 Whoa, you've used all your questions for today! Seif's AI assistant needs a breather. Come back tomorrow or just reach out to Seif directly!",
+    "🏆 Achievement unlocked: Power User! You've hit your daily limit. The AI needs to recharge - try again tomorrow or contact Seif!",
+    "📊 Plot twist: You're so curious that you've maxed out your daily quota! Come back tomorrow, or skip the queue and email Seif directly.",
+    "⏰ Time flies when you're having fun! You've asked enough questions for today. The counter resets tomorrow - or just reach out to Seif now!",
+    "🎯 Hat trick! You've hit your daily limit. Either you really like this AI, or you really want to hire Seif. Why not contact him directly?",
+    "🔋 Battery low! This AI runs on limited daily juice. Recharge tomorrow or go straight to the source - Seif himself!",
+    "🎪 The show's over for today! Come back tomorrow for more, or get a private show by contacting Seif directly!",
+    "🚦 Red light! You've crossed the finish line for today. Pit stop until tomorrow, or take the direct route to Seif's inbox!",
 ]
 
 
@@ -391,46 +379,10 @@ def get_client_ip(request: Request) -> str:
     return get_remote_address(request)
 
 
-def create_limiter() -> Limiter:
-    """
-    Create rate limiter with appropriate storage backend.
-    
-    Uses Azure Table Storage if AZURE_STORAGE_ACCOUNT_NAME is set,
-    otherwise falls back to in-memory storage.
-    
-    Returns:
-        Configured Limiter instance
-    """
-    storage_account = os.getenv("AZURE_STORAGE_ACCOUNT_NAME")
-    
-    if storage_account:
-        try:
-            # Test if we can connect to Azure Table Storage
-            print(f"🔄 Attempting to connect to Azure Table Storage (account: {storage_account})...")
-            test_storage = AzureTableStorage(uri="azuretable://")
-            if test_storage.check():
-                print(f"✅ Using Azure Table Storage for rate limiting (account: {storage_account})")
-                return Limiter(
-                    key_func=get_client_ip,
-                    storage_uri="azuretable://",
-                    storage_options={},
-                )
-            else:
-                print("⚠️ Azure Table Storage check failed, falling back to in-memory")
-        except Exception as e:
-            print(f"⚠️ Failed to initialize Azure Table Storage: {e}")
-            print("⚠️ Falling back to in-memory rate limiting")
-    
-    print("⚠️ Using in-memory rate limiting (will reset on restart)")
-    return Limiter(key_func=get_client_ip)
-
-
 # Register custom storage backend with limits library
-from limits.storage import storage_from_string
 from limits.strategies import FixedWindowRateLimiter
 import limits.storage as limits_storage
 
-# IMPORTANT: Register the scheme BEFORE creating the limiter
 limits_storage.SCHEMES["azuretable"] = AzureTableStorage
 
 def create_limiter() -> Limiter:
@@ -725,20 +677,12 @@ app = FastAPI(
 
 
 async def custom_rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
-    """
-    Custom handler for rate limit exceeded errors.
-    Returns a fun JSON message instead of the default 429 response.
-    Args:
-        request: FastAPI request object
-        exc: The RateLimitExceeded exception
-    Returns:
-        JSONResponse with a fun rate limit message
-    """
+    """Custom handler for rate limit exceeded errors."""
     return JSONResponse(
         status_code=429,
         content={
-            "error": "weekly_limit_exceeded",
-            "message": random.choice(WEEKLY_LIMIT_MESSAGES)
+            "error": "rate_limit_exceeded",
+            "message": random.choice(RATE_LIMIT_MESSAGES)
         }
     )
 
