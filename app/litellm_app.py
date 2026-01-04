@@ -333,6 +333,27 @@ class AzureTableStorage(Storage):
     def clear(self, key: str) -> None:
         """Clear a specific key."""
         self._delete_entity(key)
+    
+    def get_moving_window(self, key: str, limit: int, expiry: int) -> Tuple[int, int]:
+        """
+        Get the moving window information for a key.
+        
+        Required by the limits library for moving window rate limiting.
+        
+        Args:
+            key: The rate limit key
+            limit: The rate limit
+            expiry: The window size in seconds
+            
+        Returns:
+            Tuple of (timestamp of window start, count of requests in window)
+        """
+        entity = self._get_entity(key)
+        if entity:
+            # Return the window start time and current count
+            window_start = int(entity.get("expiry", time.time()) - expiry)
+            return (window_start, entity.get("count", 0))
+        return (int(time.time()), 0)
 
 
 def get_client_ip(request: Request) -> str:
