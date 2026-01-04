@@ -269,6 +269,10 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
             name: 'AZURE_SEARCH_INSTANCE_NAME'
             value: aiSearch.outputs.name
           }
+          {
+            name: 'AZURE_STORAGE_ACCOUNT_NAME'
+            value: storageAccount.outputs.name
+          }
         ]
         probes: [
           {

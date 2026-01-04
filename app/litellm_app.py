@@ -36,9 +36,9 @@ from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from azure.search.documents import SearchClient
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
@@ -53,8 +53,8 @@ load_dotenv()
 # Cache time-to-live in seconds (default: 1 hour)
 CACHE_TTL = int(os.getenv("CACHE_TTL_SECONDS", "3600"))
 
-# Rate limit for API requests (default: 10 requests per minute per IP)
-RATE_LIMIT = os.getenv("RATE_LIMIT", "10/minute")
+# Rate limit for API requests (default: 3 requests per week per IP)
+RATE_LIMIT = os.getenv("RATE_LIMIT", "3/week")
 
 # Maximum question length (matches client-side validation)
 MAX_QUESTION_LENGTH = 4000
@@ -92,6 +92,18 @@ GPU_OVERLOAD_MESSAGES: List[str] = [
     "🐢 Slow down, speed racer! The AI needs to catch its breath (and Azure needs to cool those expensive GPUs). Try again soon or contact Seif directly!",
     "💰 Fun fact: Every GPU cycle costs money, and we just ran out of cycles! Please try again in a couple minutes, or just reach out to Seif directly.",
     "🤯 The AI brain is overheating! Those GPUs are working overtime. Take a breather and try again, or skip the middleman and contact Seif!",
+]
+
+# Fun messages for weekly rate limit exceeded (application-level rate limiting)
+WEEKLY_LIMIT_MESSAGES: List[str] = [
+    "🎫 Whoa, you've used all 3 golden tickets this week! Seif's AI assistant needs a breather. Come back next week or just reach out to Seif directly!",
+    "🏆 Achievement unlocked: Power User! You've hit your 3 questions/week limit. The AI needs to recharge - try again next week or contact Seif!",
+    "📊 Plot twist: You're so curious that you've maxed out your weekly quota! Come back next week, or skip the queue and email Seif directly.",
+    "⏰ Time flies when you're having fun! You've asked 3 questions this week already. The counter resets soon - or just reach out to Seif now!",
+    "🎯 Hat trick! You've hit your 3-question weekly limit. Either you really like this AI, or you really want to hire Seif. Why not contact him directly?",
+    "🔋 Battery low! This AI runs on limited weekly juice (3 questions/week). Recharge next week or go straight to the source - Seif himself!",
+    "🎪 The show's over for this week! You've seen all 3 acts. Come back next week for more, or get a private show by contacting Seif directly!",
+    "🚦 Red light! You've crossed the 3-question finish line this week. Pit stop until next week, or take the direct route to Seif's inbox!",
 ]
 
 
@@ -623,9 +635,29 @@ app = FastAPI(
     version="2.0.0",
 )
 
+
+async def custom_rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    """
+    Custom handler for rate limit exceeded errors.
+    Returns a fun JSON message instead of the default 429 response.
+    Args:
+        request: FastAPI request object
+        exc: The RateLimitExceeded exception
+    Returns:
+        JSONResponse with a fun rate limit message
+    """
+    return JSONResponse(
+        status_code=429,
+        content={
+            "error": "weekly_limit_exceeded",
+            "message": random.choice(WEEKLY_LIMIT_MESSAGES)
+        }
+    )
+
+
 # Register rate limiter middleware
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, custom_rate_limit_handler)
 
 # Note: CORS not configured - this API is internal-only (ingressExternal: false)
 # Only accessible by other containers in the same Container Apps environment
