@@ -424,8 +424,50 @@ def create_limiter() -> Limiter:
 
 # Register custom storage backend with limits library
 from limits.storage import storage_from_string
+from limits.strategies import FixedWindowRateLimiter
 import limits.storage as limits_storage
+
+# IMPORTANT: Register the scheme BEFORE creating the limiter
 limits_storage.SCHEMES["azuretable"] = AzureTableStorage
+
+def create_limiter() -> Limiter:
+    """
+    Create rate limiter with appropriate storage backend.
+    
+    Uses Azure Table Storage if AZURE_STORAGE_ACCOUNT_NAME is set,
+    otherwise falls back to in-memory storage.
+    
+    Returns:
+        Configured Limiter instance
+    """
+    storage_account = os.getenv("AZURE_STORAGE_ACCOUNT_NAME")
+    
+    if storage_account:
+        try:
+            # Test if we can connect to Azure Table Storage
+            print(f"🔄 Attempting to connect to Azure Table Storage (account: {storage_account})...")
+            azure_storage = AzureTableStorage(uri="azuretable://")
+            if azure_storage.check():
+                print(f"✅ Using Azure Table Storage for rate limiting (account: {storage_account})")
+                # Create limiter with memory storage first (it will be overridden)
+                new_limiter = Limiter(
+                    key_func=get_client_ip,
+                    storage_uri="memory://",
+                )
+                # Manually inject our Azure Table Storage into both _storage and _limiter
+                new_limiter._storage = azure_storage
+                new_limiter._limiter = FixedWindowRateLimiter(azure_storage)
+                print("✅ Azure Table Storage injected into rate limiter")
+                return new_limiter
+            else:
+                print("⚠️ Azure Table Storage check failed, falling back to in-memory")
+        except Exception as e:
+            print(f"⚠️ Failed to initialize Azure Table Storage: {e}")
+            print("⚠️ Falling back to in-memory rate limiting")
+    
+    print("⚠️ Using in-memory rate limiting (will reset on restart)")
+    return Limiter(key_func=get_client_ip)
+
 
 # Initialize rate limiter (persistent with Azure Table Storage, or in-memory fallback)
 limiter = create_limiter()
