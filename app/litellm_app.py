@@ -280,15 +280,26 @@ async def stream_ai_response(question: str):
             timeout=60,             # Longer timeout for streaming
         )
         
-        # Stream each chunk as SSE
+        # Collect full response to check for OFF_TOPIC
+        full_response = ""
         async for chunk in response:
             if chunk.choices and chunk.choices[0].delta.content:
                 content = chunk.choices[0].delta.content
-                # SSE format: data: {json}\n\n
-                yield f"data: {json.dumps({'content': content})}\n\n"
+                full_response += content
         
-        # Send done event
-        yield f"data: {json.dumps({'done': True})}\n\n"
+        # Check if the response is off-topic
+        is_off_topic = full_response.strip() == "OFF_TOPIC" or full_response.strip().startswith("OFF_TOPIC")
+        
+        if is_off_topic:
+            # Return a fun message instead of "OFF_TOPIC"
+            fun_message = random.choice(FUN_MESSAGES)
+            yield f"data: {json.dumps({'content': fun_message})}\n\n"
+            yield f"data: {json.dumps({'done': True, 'is_job_related': False})}\n\n"
+        else:
+            # Stream the actual response
+            yield f"data: {json.dumps({'content': full_response})}\n\n"
+            # Send done event
+            yield f"data: {json.dumps({'done': True})}\n\n"
         
     except litellm.RateLimitError:
         print("Hit LiteLLM rate limit during streaming")
