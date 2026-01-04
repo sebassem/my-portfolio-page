@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@astrojs/node": "^9.5.1",
+    "@lottiefiles/dotlottie-wc": "^0.8.13",
     "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.1.1",
     "astro": "^5.5.3",
