@@ -56,8 +56,8 @@ CACHE_TTL = int(os.getenv("CACHE_TTL_SECONDS", "3600"))
 
 # Rate limit for API requests (default: 3 requests per week per IP)
 # Note: limits library supports second/minute/hour/day/month/year
-# For weekly, use "3/7 day" format
-RATE_LIMIT = os.getenv("RATE_LIMIT", "3/7 day")
+# For weekly, use "3/day" format
+RATE_LIMIT = os.getenv("RATE_LIMIT", "3/day")
 
 # Maximum question length (matches client-side validation)
 MAX_QUESTION_LENGTH = 4000
@@ -282,30 +282,24 @@ class AzureTableStorage(Storage):
         Returns:
             New counter value
         """
-        print(f"🔥 INCR called! key={key}, expiry={expiry}, amount={amount}")
         entity = self._get_entity(key)
         now = time.time()
         
         if entity:
             new_count = entity.get("count", 0) + amount
             new_expiry = now + expiry if elastic_expiry else entity.get("expiry", now + expiry)
-            print(f"🔥 Existing entity found, new_count={new_count}")
         else:
             new_count = amount
             new_expiry = now + expiry
-            print(f"🔥 New entity, count={new_count}")
         
         # Upsert the entity
-        sanitized_key = self._sanitize_key(key)
-        print(f"🔥 Upserting entity: PartitionKey=ratelimit, RowKey={sanitized_key}")
         self.table_client.upsert_entity({
             "PartitionKey": "ratelimit",
-            "RowKey": sanitized_key,
+            "RowKey": self._sanitize_key(key),
             "count": new_count,
             "expiry": new_expiry,
             "updated": datetime.now(timezone.utc).isoformat()
         })
-        print(f"🔥 Entity upserted successfully!")
         
         return new_count
     
@@ -818,14 +812,6 @@ async def ask_question(request: Request, question_request: QuestionRequest) -> S
     Raises:
         HTTPException: If question is empty or too long
     """
-    # Debug: Check if rate limiting ran
-    rate_limit_complete = getattr(request.state, "_rate_limiting_complete", False)
-    print(f"🔍 Rate limit check completed: {rate_limit_complete}")
-    print(f"🔍 Limiter._storage type: {type(limiter._storage)}")
-    print(f"🔍 Limiter._limiter type: {type(limiter._limiter)}")
-    print(f"🔍 Limiter._limiter.storage type: {type(limiter._limiter.storage) if hasattr(limiter._limiter, 'storage') else 'N/A'}")
-    print(f"🔍 Are they the same instance? {limiter._storage is limiter._limiter.storage if hasattr(limiter._limiter, 'storage') else 'N/A'}")
-    
     # Validate input
     question = question_request.question.strip()
 
