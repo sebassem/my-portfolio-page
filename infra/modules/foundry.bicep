@@ -110,5 +110,6 @@ module containerAppsFoundryRoleAssignment 'br/public:avm/ptn/authorization/resou
   }
 }
 
+output foundryResourceId string = foundry.id
 output foundryProjectResourceId string = foundryProject.id
 output foundryEndpoint string = foundry.properties.endpoints['OpenAI Language Model Instance API']

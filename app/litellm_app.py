@@ -17,7 +17,7 @@ from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from azure.search.documents import SearchClient
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -243,6 +243,64 @@ async def get_ai_response(question: str) -> dict:
         raise
 
 
+async def stream_ai_response(question: str):
+    """
+    Async generator that streams LLM response chunks.
+    
+    Yields Server-Sent Events (SSE) formatted data.
+    Note: Streaming bypasses caching - each request hits the LLM.
+    """
+    import json
+    
+    # Retrieve context from Azure AI Search
+    context = retrieve_context(question)
+    
+    # Build messages
+    system_prompt = ASSISTANT_PROMPT.format(context=context)
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": question}
+    ]
+    
+    try:
+        # Get fresh token for this request
+        token = openai_token_provider()
+        
+        # LiteLLM async streaming completion
+        response = await litellm.acompletion(
+            model=f"azure/{DEPLOYMENT_NAME}",
+            messages=messages,
+            api_base=AZURE_ENDPOINT,
+            api_key=token,
+            api_version="2024-05-01-preview",
+            stream=True,            # Enable streaming
+            num_retries=3,
+            timeout=60,             # Longer timeout for streaming
+        )
+        
+        # Stream each chunk as SSE
+        async for chunk in response:
+            if chunk.choices and chunk.choices[0].delta.content:
+                content = chunk.choices[0].delta.content
+                # SSE format: data: {json}\n\n
+                yield f"data: {json.dumps({'content': content})}\n\n"
+        
+        # Send done event
+        yield f"data: {json.dumps({'done': True})}\n\n"
+        
+    except litellm.RateLimitError:
+        print("Hit LiteLLM rate limit during streaming")
+        yield f"data: {json.dumps({'error': 'rate_limited'})}\n\n"
+    except Exception as e:
+        error_str = str(e).lower()
+        if "429" in error_str or "rate limit" in error_str:
+            print(f"Rate limit error during streaming: {e}")
+            yield f"data: {json.dumps({'error': 'rate_limited'})}\n\n"
+        else:
+            print(f"LLM streaming error: {e}")
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+
 # =============================================================================
 # FastAPI Application
 # =============================================================================
@@ -302,22 +360,24 @@ async def root():
     return {"status": "healthy", "message": "Seif's AI Assistant is running (LiteLLM)!"}
 
 
-@app.post("/ask", response_model=AnswerResponse)
+@app.post("/ask")
 @limiter.limit(RATE_LIMIT)
 async def ask_question(request: Request, question_request: QuestionRequest):
     """
-    Process a question using direct Azure SDK + LiteLLM.
+    Process a question using direct Azure SDK + LiteLLM with streaming.
 
-    Returns the LLM response if the question is job-related,
-    otherwise returns a fun message.
+    Returns a Server-Sent Events (SSE) stream of the LLM response.
 
     Features:
-    - Response caching via LiteLLM (instant responses for repeated questions)
+    - Real-time streaming response (word by word)
     - Automatic retries with exponential backoff
-    - LiteLLM handles Azure OpenAI rate limits gracefully
     - Rate limiting via SlowAPI (10/minute per IP by default)
     - Input sanitization to prevent prompt injection
+    
+    Note: Streaming bypasses response caching.
     """
+    import json
+    
     # Strip whitespace from input
     question = question_request.question.strip()
 
@@ -335,38 +395,31 @@ async def ask_question(request: Request, question_request: QuestionRequest):
         # Log suspicious input for monitoring (don't expose details to client)
         client_ip = get_client_ip(request)
         print(f"Suspicious input detected from {client_ip}: {question[:100]}...")
-        return AnswerResponse(
-            answer=random.choice(FUN_MESSAGES),
-            is_job_related=False
+        # Return fun message as SSE for suspicious input
+        async def suspicious_response():
+            msg = random.choice(FUN_MESSAGES)
+            yield f"data: {json.dumps({'content': msg})}\n\n"
+            yield f"data: {json.dumps({'done': True, 'is_job_related': False})}\n\n"
+        return StreamingResponse(
+            suspicious_response(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",  # Disable nginx buffering
+            }
         )
 
-    try:
-        result = await get_ai_response(question)
-
-        # Check if we hit Azure OpenAI rate limits
-        if result.get("rate_limited"):
-            return AnswerResponse(
-                answer=random.choice(GPU_OVERLOAD_MESSAGES),
-                is_job_related=False
-            )
-
-        # Return LLM response or fun message for off-topic
-        if result["is_job_related"]:
-            return AnswerResponse(
-                answer=result["response"],
-                is_job_related=True
-            )
-        else:
-            return AnswerResponse(
-                answer=random.choice(FUN_MESSAGES),
-                is_job_related=False
-            )
-
-    except Exception as e:
-        import traceback
-        print(f"Error processing question: {str(e)}")
-        print(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=f"Error processing question: {str(e)}")
+    # Return streaming response
+    return StreamingResponse(
+        stream_ai_response(question),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        }
+    )
 
 
 # =============================================================================

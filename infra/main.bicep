@@ -75,6 +75,9 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.31.0' = {
     skuName: 'Standard_LRS'
     kind: 'StorageV2'
     accessTier: 'Cold'
+    managedIdentities: {
+      systemAssigned: true
+    }
     allowBlobPublicAccess: false
     publicNetworkAccess: 'Enabled'
     allowSharedKeyAccess: false
@@ -416,22 +419,17 @@ module nsp 'br/public:avm/res/network/network-security-perimeter:0.1.3' = {
       {
         privateLinkResource: keyVault.outputs.resourceId
         profile: 'nsp-${namingSuffix}-infra-profile'
-        accessMode: 'Learning'
+        accessMode: 'Enforced'
       }
       {
         privateLinkResource: storageAccount.outputs.resourceId
         profile: 'nsp-${namingSuffix}-infra-profile'
-        accessMode: 'Learning'
+        accessMode: 'Enforced'
       }
       {
-        privateLinkResource: foundry.outputs.foundryProjectResourceId
+        privateLinkResource: foundry.outputs.foundryResourceId
         profile: 'nsp-${namingSuffix}-infra-profile'
-        accessMode: 'Learning'
-      }
-      {
-        privateLinkResource: acr.outputs.resourceId
-        profile: 'nsp-${namingSuffix}-infra-profile'
-        accessMode: 'Learning'
+        accessMode: 'Enforced'
       }
     ]
     profiles: [
@@ -445,6 +443,13 @@ module nsp 'br/public:avm/res/network/network-security-perimeter:0.1.3' = {
               {
                 id: subscription().id
               }
+            ]
+          }
+          {
+            name: 'outbound'
+            direction: 'Outbound'
+            fullyQualifiedDomainNames: [
+              '${aiSearch.outputs.name}.search.windows.net'
             ]
           }
         ]

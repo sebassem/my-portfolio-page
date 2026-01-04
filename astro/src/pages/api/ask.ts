@@ -29,16 +29,35 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
     
+    // Forward request to backend API with streaming
     const response = await fetch(`${AI_API_URL}/ask`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        // Forward client IP for rate limiting
+        'X-Forwarded-For': request.headers.get('x-forwarded-for') || '',
       },
       body: JSON.stringify(body),
     });
 
-    const data = await response.json();
+    // Check if response is streaming (SSE)
+    const contentType = response.headers.get('content-type');
     
+    if (contentType?.includes('text/event-stream')) {
+      // Pass through the SSE stream directly
+      return new Response(response.body, {
+        status: response.status,
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+          'X-Accel-Buffering': 'no',  // Disable nginx buffering
+        }
+      });
+    }
+    
+    // Fallback for non-streaming responses (errors, etc.)
+    const data = await response.json();
     return new Response(JSON.stringify(data), {
       status: response.status,
       headers: { 'Content-Type': 'application/json' }
