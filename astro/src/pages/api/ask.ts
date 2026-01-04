@@ -14,7 +14,7 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
     
-    // Server-side validation (defense-in-depth, matches client maxlength="1200")
+    // Server-side validation (defense-in-depth, matches client maxlength="4000")
     if (!body.question || typeof body.question !== 'string') {
       return new Response(JSON.stringify({ message: 'Question is required' }), {
         status: 400,
@@ -22,8 +22,8 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
     
-    if (body.question.length > 1200) {
-      return new Response(JSON.stringify({ message: 'Question too long (max 1200 characters)' }), {
+    if (body.question.length > 4000) {
+      return new Response(JSON.stringify({ message: 'Question too long (max 4000 characters)' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });

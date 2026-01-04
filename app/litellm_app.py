@@ -214,6 +214,7 @@ async def get_ai_response(question: str) -> dict:
             api_base=AZURE_ENDPOINT,
             api_key=token,  # Azure AD token
             api_version="2024-05-01-preview",
+            max_tokens=1024,        # Balanced for detailed responses with examples
             caching=True,           # Enable response caching
             num_retries=3,          # Auto-retry on transient failures
             timeout=30,             # Request timeout in seconds
@@ -274,6 +275,7 @@ async def stream_ai_response(question: str):
             api_key=token,
             api_version="2024-05-01-preview",
             stream=True,            # Enable streaming
+            max_tokens=1024,        # Balanced for detailed responses with examples
             num_retries=3,
             timeout=60,             # Longer timeout for streaming
         )
@@ -385,8 +387,8 @@ async def ask_question(request: Request, question_request: QuestionRequest):
         raise HTTPException(status_code=400, detail="Question cannot be empty")
 
     # Server-side validation (defense-in-depth, matches client maxlength)
-    if len(question) > 1200:
-        raise HTTPException(status_code=400, detail="Question too long (max 1200 characters)")
+    if len(question) > 4000:
+        raise HTTPException(status_code=400, detail="Question too long (max 4000 characters)")
     
     # Sanitize input and check for suspicious patterns
     question, is_suspicious = sanitize_input(question)

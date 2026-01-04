@@ -269,8 +269,8 @@ async def ask_question(request: Request, question_request: QuestionRequest):
         raise HTTPException(status_code=400, detail="Question cannot be empty")
 
     # Server-side validation (defense-in-depth, matches client maxlength)
-    if len(question) > 1200:
-        raise HTTPException(status_code=400, detail="Question too long (max 1200 characters)")
+    if len(question) > 4000:
+        raise HTTPException(status_code=400, detail="Question too long (max 4000 characters)")
 
     try:
         result = await graph.ainvoke({

@@ -20,9 +20,9 @@ import svgHl from "../assets/hl.svg";
           id="ai-question"
           class="w-full p-3 pb-8 border-2 border-black rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-pink-400"
           rows="3"
-          maxlength="1200"
+          maxlength="4000"
           placeholder="Type your question here..."></textarea>
-        <span id="char-count" class="absolute bottom-2 right-3 text-sm text-gray-500">0/1200</span>
+        <span id="char-count" class="absolute bottom-2 right-3 text-sm text-gray-500">0/4000</span>
       </div>
       <div class="flex justify-center">
         <div class="relative group">
@@ -157,7 +157,7 @@ import svgHl from "../assets/hl.svg";
     }
     // Update character count
     if (charCount) {
-      charCount.textContent = `${aiQuestion.value.length}/1200`;
+      charCount.textContent = `${aiQuestion.value.length}/4000`;
     }
   });
 
