@@ -819,8 +819,10 @@ async def ask_question(request: Request, question_request: QuestionRequest) -> S
     # Debug: Check if rate limiting ran
     rate_limit_complete = getattr(request.state, "_rate_limiting_complete", False)
     print(f"🔍 Rate limit check completed: {rate_limit_complete}")
-    print(f"🔍 Limiter storage type: {type(limiter._storage)}")
-    print(f"🔍 Limiter._limiter storage type: {type(limiter._limiter._storage) if hasattr(limiter._limiter, '_storage') else 'N/A'}")
+    print(f"🔍 Limiter._storage type: {type(limiter._storage)}")
+    print(f"🔍 Limiter._limiter type: {type(limiter._limiter)}")
+    print(f"🔍 Limiter._limiter.storage type: {type(limiter._limiter.storage) if hasattr(limiter._limiter, 'storage') else 'N/A'}")
+    print(f"🔍 Are they the same instance? {limiter._storage is limiter._limiter.storage if hasattr(limiter._limiter, 'storage') else 'N/A'}")
     
     # Validate input
     question = question_request.question.strip()
