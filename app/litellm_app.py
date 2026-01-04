@@ -279,24 +279,30 @@ class AzureTableStorage(Storage):
         Returns:
             New counter value
         """
+        print(f"🔥 INCR called! key={key}, expiry={expiry}, amount={amount}")
         entity = self._get_entity(key)
         now = time.time()
         
         if entity:
             new_count = entity.get("count", 0) + amount
             new_expiry = now + expiry if elastic_expiry else entity.get("expiry", now + expiry)
+            print(f"🔥 Existing entity found, new_count={new_count}")
         else:
             new_count = amount
             new_expiry = now + expiry
+            print(f"🔥 New entity, count={new_count}")
         
         # Upsert the entity
+        sanitized_key = self._sanitize_key(key)
+        print(f"🔥 Upserting entity: PartitionKey=ratelimit, RowKey={sanitized_key}")
         self.table_client.upsert_entity({
             "PartitionKey": "ratelimit",
-            "RowKey": self._sanitize_key(key),
+            "RowKey": sanitized_key,
             "count": new_count,
             "expiry": new_expiry,
             "updated": datetime.now(timezone.utc).isoformat()
         })
+        print(f"🔥 Entity upserted successfully!")
         
         return new_count
     
