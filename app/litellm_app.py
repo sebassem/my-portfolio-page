@@ -228,8 +228,18 @@ class AzureTableStorage(Storage):
             pass  # Table already exists
     
     def _sanitize_key(self, key: str) -> str:
-        """Sanitize key for use as RowKey (remove invalid characters)."""
-        # Azure Table Storage RowKey cannot contain: / \ # ?
+        """
+        Extract IP address from key for use as RowKey.
+        
+        The limits library generates keys like: LIMITER_192.168.1.1__ask_3_1_day
+        We extract just the IP so changing rate limits doesn't create new entries.
+        """
+        import re
+        # Extract IP address from the key (IPv4 pattern)
+        ip_match = re.search(r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', key)
+        if ip_match:
+            return ip_match.group(1)
+        # Fallback: sanitize the full key if no IP found
         return key.replace("/", "_").replace("\\", "_").replace("#", "_").replace("?", "_")
     
     def _get_entity(self, key: str) -> Optional[dict]:
