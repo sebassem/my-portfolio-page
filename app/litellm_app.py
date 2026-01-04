@@ -389,15 +389,25 @@ def create_limiter() -> Limiter:
     storage_account = os.getenv("AZURE_STORAGE_ACCOUNT_NAME")
     
     if storage_account:
-        print(f"✅ Using Azure Table Storage for rate limiting (account: {storage_account})")
-        return Limiter(
-            key_func=get_client_ip,
-            storage_uri="azuretable://",  # Custom scheme
-            storage_options={},
-        )
-    else:
-        print("⚠️ Using in-memory rate limiting (will reset on restart)")
-        return Limiter(key_func=get_client_ip)
+        try:
+            # Test if we can connect to Azure Table Storage
+            print(f"🔄 Attempting to connect to Azure Table Storage (account: {storage_account})...")
+            test_storage = AzureTableStorage(uri="azuretable://")
+            if test_storage.check():
+                print(f"✅ Using Azure Table Storage for rate limiting (account: {storage_account})")
+                return Limiter(
+                    key_func=get_client_ip,
+                    storage_uri="azuretable://",
+                    storage_options={},
+                )
+            else:
+                print("⚠️ Azure Table Storage check failed, falling back to in-memory")
+        except Exception as e:
+            print(f"⚠️ Failed to initialize Azure Table Storage: {e}")
+            print("⚠️ Falling back to in-memory rate limiting")
+    
+    print("⚠️ Using in-memory rate limiting (will reset on restart)")
+    return Limiter(key_func=get_client_ip)
 
 
 # Register custom storage backend with limits library
