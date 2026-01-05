@@ -68,7 +68,7 @@ RATE_LIMIT = os.getenv("RATE_LIMIT", "3/day")
 MAX_QUESTION_LENGTH = 4000
 
 # Number of documents to retrieve from search
-SEARCH_TOP_K = 3
+SEARCH_TOP_K = 5
 
 # Buffer size for detecting OFF_TOPIC responses before streaming
 OFF_TOPIC_BUFFER_SIZE = 20
@@ -321,6 +321,7 @@ async def stream_ai_response(question: str) -> AsyncGenerator[str, None]:
             stream=True,
             max_tokens=1024,
             num_retries=3,
+            temperature=0.3,
             timeout=60,  # Longer timeout for streaming
         )
         
