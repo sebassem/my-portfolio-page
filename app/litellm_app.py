@@ -282,6 +282,12 @@ def retrieve_context(query: str, top_k: int = SEARCH_TOP_K) -> str:
     try:
         # Generate embedding for the query
         query_embedding = get_embedding(query)
+        
+        # Get semantic configuration name - use explicit env var or construct from index name
+        index_name = os.getenv('AZURE_SEARCH_INDEX_NAME')
+        default_semantic_config = f"{index_name}-semantic-configuration" if index_name else "portfolio-rag-index-semantic-configuration"
+        semantic_config = os.getenv("AZURE_SEARCH_SEMANTIC_CONFIG", default_semantic_config)
+        print(f"🔍 Searching with semantic config: {semantic_config}")
 
         # Hybrid search with semantic ranking
         results = search_client.search(
@@ -294,14 +300,28 @@ def retrieve_context(query: str, top_k: int = SEARCH_TOP_K) -> str:
                 )
             ],
             query_type="semantic",  # Enable semantic ranking
-            semantic_configuration_name=os.getenv("AZURE_SEARCH_SEMANTIC_CONFIG", f"{os.getenv('AZURE_SEARCH_INDEX_NAME')}-semantic-configuration"),
+            semantic_configuration_name=semantic_config,
             top=top_k,
             select=["chunk"]  # Field name from search index schema
         )
-        chunks = [doc["chunk"] for doc in results if "chunk" in doc]
+        
+        # Convert to list to actually execute the search
+        results_list = list(results)
+        print(f"🔍 Search returned {len(results_list)} results")
+        
+        # Debug: Print first result structure
+        if results_list:
+            first_result = results_list[0]
+            print(f"🔍 First result keys: {first_result.keys() if hasattr(first_result, 'keys') else dir(first_result)}")
+            print(f"🔍 First result: {first_result}")
+        
+        chunks = [doc["chunk"] for doc in results_list if "chunk" in doc]
+        print(f"🔍 Extracted {len(chunks)} chunks")
         return "\n\n".join(chunks)
     except Exception as e:
-        print(f"Search error: {e}")
+        print(f"❌ Search error: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
         return ""
 
 
@@ -343,6 +363,12 @@ async def stream_ai_response(question: str) -> AsyncGenerator[str, None]:
     """
     # Step 1: Retrieve relevant context from portfolio documents
     context = retrieve_context(question)
+    
+    # Debug: Log context retrieval
+    if context:
+        print(f"📚 Context retrieved ({len(context)} chars). First 300 chars: {context[:300]}...")
+    else:
+        print("⚠️ WARNING: No context retrieved from RAG!")
 
     # Step 2: Build the conversation messages
     system_prompt = ASSISTANT_PROMPT.format(context=context)
