@@ -147,6 +147,7 @@ module aiSearch 'br/public:avm/res/search/search-service:0.12.0' = {
     replicaCount: 1
     partitionCount: 1
     disableLocalAuth: true
+    semanticSearch: 'free'
     roleAssignments: [
       {
         principalId: containerAppsIdentity.outputs.principalId
