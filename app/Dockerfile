@@ -56,6 +56,8 @@ COPY --from=builder /opt/venv /opt/venv
 # Copy application code
 COPY --chown=appuser:appgroup litellm_app.py .
 COPY --chown=appuser:appgroup prompts.yaml .
+COPY --chown=appuser:appgroup services/ ./services/
+COPY --chown=appuser:appgroup storage/ ./storage/
 
 # Switch to non-root user
 USER appuser
