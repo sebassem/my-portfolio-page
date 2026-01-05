@@ -15,7 +15,7 @@ Caching:
 Rate Limiting:
 - Default: In-memory (resets on container restart)
 - Optional: Azure Table Storage for persistent rate limiting across restarts
-  Set AZURE_STORAGE_ACCOUNT_NAME env var to enable persistent storage
+Set AZURE_STORAGE_ACCOUNT_NAME env var to enable persistent storage
 """
 
 import os
@@ -28,6 +28,8 @@ import litellm
 import yaml
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from azure.search.documents import SearchClient
+from azure.search.documents.models import VectorizedQuery
+from openai import AzureOpenAI
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -141,6 +143,17 @@ search_client = SearchClient(
 # Azure OpenAI configuration
 AZURE_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_RESPONSES_DEPLOYMENT_NAME")
+EMBEDDING_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME")
+
+# Azure OpenAI client for embeddings
+openai_client = AzureOpenAI(
+    azure_endpoint=AZURE_ENDPOINT,
+    azure_ad_token_provider=openai_token_provider,
+    api_version="2024-05-01-preview"
+)
+
+# Search index vector field name
+SEARCH_VECTOR_FIELD = os.getenv("AZURE_SEARCH_VECTOR_FIELD", "text_vector")
 
 
 # =============================================================================
@@ -234,12 +247,30 @@ limiter = create_limiter()
 # Core AI Functions
 # =============================================================================
 
+def get_embedding(text: str) -> list[float]:
+    """
+    Generate embedding vector for text using Azure OpenAI.
+    
+    Args:
+        text: Text to embed
+        
+    Returns:
+        Embedding vector as list of floats
+    """
+    response = openai_client.embeddings.create(
+        input=text,
+        model=EMBEDDING_DEPLOYMENT_NAME
+    )
+    return response.data[0].embedding
+
+
 def retrieve_context(query: str, top_k: int = SEARCH_TOP_K) -> str:
     """
-    Retrieve relevant document chunks from Azure AI Search.
+    Retrieve relevant document chunks from Azure AI Search using hybrid + semantic search.
     
-    Performs a semantic/hybrid search to find the most relevant
-    portfolio content for the user's question.
+    Performs hybrid search (keyword + vector) with semantic ranking to find the most
+    relevant portfolio content. The semantic ranker uses a cross-encoder model to
+    re-rank results for better relevance.
     
     Args:
         query: User's question
@@ -249,8 +280,21 @@ def retrieve_context(query: str, top_k: int = SEARCH_TOP_K) -> str:
         Concatenated document chunks as context string
     """
     try:
+        # Generate embedding for the query
+        query_embedding = get_embedding(query)
+
+        # Hybrid search with semantic ranking
         results = search_client.search(
-            search_text=query,
+            search_text=query,  # Keyword search component
+            vector_queries=[
+                VectorizedQuery(
+                    vector=query_embedding,
+                    k_nearest_neighbors=top_k,
+                    fields=SEARCH_VECTOR_FIELD
+                )
+            ],
+            query_type="semantic",  # Enable semantic ranking
+            semantic_configuration_name=os.getenv("AZURE_SEARCH_SEMANTIC_CONFIG", f"{os.getenv('AZURE_SEARCH_INDEX_NAME')}-semantic-configuration"),
             top=top_k,
             select=["chunk"]  # Field name from search index schema
         )
@@ -264,12 +308,12 @@ def retrieve_context(query: str, top_k: int = SEARCH_TOP_K) -> str:
 def is_rate_limit_error(exception: Exception) -> bool:
     """
     Check if an exception indicates a rate limit error.
-    
+
     Azure OpenAI returns 429 status codes when rate limited.
-    
+
     Args:
         exception: The caught exception
-        
+
     Returns:
         True if this is a rate limit error
     """
@@ -282,35 +326,35 @@ def is_rate_limit_error(exception: Exception) -> bool:
 async def stream_ai_response(question: str) -> AsyncGenerator[str, None]:
     """
     Stream LLM response chunks as Server-Sent Events.
-    
+
     This function:
     1. Retrieves relevant context from Azure AI Search
     2. Calls Azure OpenAI with streaming enabled
     3. Buffers initial response to detect OFF_TOPIC before streaming
     4. Yields SSE-formatted chunks for real-time display
-    
+
     Note: Streaming bypasses LiteLLM's response cache.
-    
+
     Args:
         question: User's sanitized question
-        
+
     Yields:
         SSE-formatted message strings
     """
     # Step 1: Retrieve relevant context from portfolio documents
     context = retrieve_context(question)
-    
+
     # Step 2: Build the conversation messages
     system_prompt = ASSISTANT_PROMPT.format(context=context)
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": question}
     ]
-    
+
     try:
         # Get fresh Azure AD token for this request
         token = openai_token_provider()
-        
+
         # Step 3: Call Azure OpenAI with streaming
         response = await litellm.acompletion(
             model=f"azure/{DEPLOYMENT_NAME}",
@@ -324,20 +368,20 @@ async def stream_ai_response(question: str) -> AsyncGenerator[str, None]:
             temperature=0.3,
             timeout=60,  # Longer timeout for streaming
         )
-        
+
         # Step 4: Buffer initial chunks to detect OFF_TOPIC
         # We need to check if the response starts with "OFF_TOPIC" before streaming
         buffer = ""
         streaming_started = False
-        
+
         async for chunk in response:
             if chunk.choices and chunk.choices[0].delta.content:
                 content = chunk.choices[0].delta.content
-                
+
                 if not streaming_started:
                     # Still buffering to detect OFF_TOPIC
                     buffer += content
-                    
+
                     # Check if we have enough content to determine if it's off-topic
                     if len(buffer) >= OFF_TOPIC_BUFFER_SIZE or "OFF_TOPIC" in buffer:
                         if buffer.strip().startswith("OFF_TOPIC"):
@@ -352,7 +396,7 @@ async def stream_ai_response(question: str) -> AsyncGenerator[str, None]:
                 else:
                     # Normal streaming mode
                     yield sse_message(content=content)
-        
+
         # Handle case where response was shorter than buffer limit
         if not streaming_started and buffer:
             if buffer.strip().startswith("OFF_TOPIC"):
@@ -361,10 +405,10 @@ async def stream_ai_response(question: str) -> AsyncGenerator[str, None]:
                 return
             else:
                 yield sse_message(content=buffer)
-        
+
         # Send completion event
         yield sse_message(done=True)
-        
+
     except Exception as e:
         if is_rate_limit_error(e):
             print(f"Rate limit error during streaming: {e}")
