@@ -2,7 +2,6 @@
 name: "AI Solution Architecture - AWS to Azure Migration"
 category: ["AI", "Architecture"]
 cover: "https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=1600"
-link: "https://azure.microsoft.com/solutions/ai"
 order: 2
 featured: true
 ---
