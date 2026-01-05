@@ -63,8 +63,8 @@ CACHE_TTL = int(os.getenv("CACHE_TTL_SECONDS", "3600"))
 
 # Rate limit for API requests (default: 3 requests per week per IP)
 # Note: limits library supports second/minute/hour/day/month/year
-# For weekly, use "3/day" format
-RATE_LIMIT = os.getenv("RATE_LIMIT", "3/day")
+# For weekly, use "10/day" format
+RATE_LIMIT = os.getenv("RATE_LIMIT", "10/day")
 
 # Maximum question length (matches client-side validation)
 MAX_QUESTION_LENGTH = 4000
