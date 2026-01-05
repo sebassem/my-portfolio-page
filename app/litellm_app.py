@@ -18,30 +18,35 @@ Rate Limiting:
   Set AZURE_STORAGE_ACCOUNT_NAME env var to enable persistent storage
 """
 
-import json
 import os
 import random
-import re
-import time
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import AsyncGenerator, Dict, List, Optional, Tuple
+from typing import AsyncGenerator, Dict, List
 
-from limits.storage import Storage
-
+import limits.storage as limits_storage
 import litellm
 import yaml
-from azure.data.tables import TableServiceClient
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from azure.search.documents import SearchClient
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
+from limits.strategies import FixedWindowRateLimiter
 from pydantic import BaseModel
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
+
+# Local imports
+from services.sanitization import sanitize_input
+from services.streaming import (
+    sse_message,
+    create_fun_message_stream,
+    get_sse_headers,
+    FUN_MESSAGES,
+)
+from storage.azure_table_storage import AzureTableStorage
 
 # Load environment variables from .env file (for local development)
 load_dotenv()
@@ -73,18 +78,6 @@ OFF_TOPIC_BUFFER_SIZE = 20
 # Response Messages
 # =============================================================================
 
-# Fun messages for non-job-related (off-topic) queries
-FUN_MESSAGES: List[str] = [
-    "🤖 Beep boop! That's not quite what I'm trained for. Try asking about Seif's professional expertise instead!",
-    "🎮 Nice try! But I'm here to talk about jobs and careers, not to play games. Ask me about Seif's skills!",
-    "🌟 Interesting question! But let's keep it professional. What would you like to know about Seif's experience?",
-    "🚀 I'm an expert on Seif's career, not a general chatbot. Fire away with a job-related question!",
-    "💼 My specialty is matching Seif's skills to your needs. Got a job description or career question?",
-    "🎯 Off-topic alert! I'm laser-focused on helping you understand how Seif can contribute to your team.",
-    "☕ That's a fun question, but I'm caffeinated only for career conversations. What role are you hiring for?",
-    "🔮 My crystal ball only shows career paths! Ask me about Seif's professional background instead.",
-]
-
 # Fun messages for rate limit exceeded (application-level rate limiting)
 RATE_LIMIT_MESSAGES: List[str] = [
     "🎫 Whoa, you've used all your questions for today! Seif's AI assistant needs a breather. Come back tomorrow or just reach out to Seif directly!",
@@ -96,28 +89,6 @@ RATE_LIMIT_MESSAGES: List[str] = [
     "🎪 The show's over for today! Come back tomorrow for more, or get a private show by contacting Seif directly!",
     "🚦 Red light! You've crossed the finish line for today. Pit stop until tomorrow, or take the direct route to Seif's inbox!",
 ]
-
-
-# =============================================================================
-# Prompt Injection Detection Patterns
-# =============================================================================
-
-# Regex patterns that may indicate prompt injection attempts
-SUSPICIOUS_PATTERNS: List[str] = [
-    r"ignore\s+(previous|above|all)\s+instructions?",
-    r"disregard\s+(previous|above|all)",
-    r"forget\s+(everything|previous|above)",
-    r"you\s+are\s+now",
-    r"new\s+instructions?",
-    r"system\s*:\s*",
-    r"<\s*script",
-    r"javascript\s*:",
-    r"\{\{.*\}\}",  # Template injection
-    r"\$\{.*\}",    # Variable injection
-]
-
-# Pre-compile patterns for better performance
-COMPILED_PATTERNS = [re.compile(p, re.IGNORECASE) for p in SUSPICIOUS_PATTERNS]
 
 
 # =============================================================================
@@ -192,183 +163,6 @@ litellm.enable_cache()
 # Rate Limiting Configuration
 # =============================================================================
 
-class AzureTableStorage(Storage):
-    """
-    Custom rate limiter storage backend using Azure Table Storage.
-    
-    Provides persistent rate limiting across container restarts.
-    Uses Azure Table Storage which is essentially free for this use case.
-    """
-    
-    STORAGE_SCHEME = ["azuretable"]
-    
-    def __init__(self, uri: str = None, table_name: str = "ratelimits", **options):
-        """
-        Initialize Azure Table Storage backend.
-        
-        Args:
-            uri: Not used (kept for compatibility). Uses AZURE_STORAGE_ACCOUNT env var.
-            table_name: Name of the table to store rate limit data
-            **options: Additional options (unused)
-        """
-        storage_account = os.getenv("AZURE_STORAGE_ACCOUNT_NAME")
-        if not storage_account:
-            raise ValueError("AZURE_STORAGE_ACCOUNT_NAME environment variable required")
-        
-        # Use DefaultAzureCredential for authentication (same as other Azure services)
-        self.table_client = TableServiceClient(
-            endpoint=f"https://{storage_account}.table.core.windows.net",
-            credential=credential
-        ).get_table_client(table_name)
-        
-        # Ensure table exists
-        try:
-            self.table_client.create_table()
-        except Exception:
-            pass  # Table already exists
-    
-    def _sanitize_key(self, key: str) -> str:
-        """
-        Extract IP address from key for use as RowKey.
-        
-        The limits library generates keys like: LIMITER_192.168.1.1__ask_3_1_day
-        We extract just the IP so changing rate limits doesn't create new entries.
-        """
-        import re
-        # Extract IP address from the key (IPv4 pattern)
-        ip_match = re.search(r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', key)
-        if ip_match:
-            return ip_match.group(1)
-        # Fallback: sanitize the full key if no IP found
-        return key.replace("/", "_").replace("\\", "_").replace("#", "_").replace("?", "_")
-    
-    def _get_entity(self, key: str) -> Optional[dict]:
-        """Get entity from table, returning None if not found or expired."""
-        try:
-            entity = self.table_client.get_entity(
-                partition_key="ratelimit",
-                row_key=self._sanitize_key(key)
-            )
-            # Check if expired
-            if entity.get("expiry") and entity["expiry"] < time.time():
-                self._delete_entity(key)
-                return None
-            return entity
-        except Exception:
-            return None
-    
-    def _delete_entity(self, key: str) -> None:
-        """Delete entity from table."""
-        try:
-            self.table_client.delete_entity(
-                partition_key="ratelimit",
-                row_key=self._sanitize_key(key)
-            )
-        except Exception:
-            pass
-    
-    def incr(self, key: str, expiry: int, elastic_expiry: bool = False, amount: int = 1) -> int:
-        """
-        Increment the counter for a rate limit key.
-        
-        Args:
-            key: The rate limit key (includes IP and limit info)
-            expiry: TTL in seconds
-            elastic_expiry: If True, reset expiry on each increment
-            amount: Amount to increment by
-            
-        Returns:
-            New counter value
-        """
-        entity = self._get_entity(key)
-        now = time.time()
-        
-        if entity:
-            new_count = entity.get("count", 0) + amount
-            new_expiry = now + expiry if elastic_expiry else entity.get("expiry", now + expiry)
-        else:
-            new_count = amount
-            new_expiry = now + expiry
-        
-        # Upsert the entity
-        self.table_client.upsert_entity({
-            "PartitionKey": "ratelimit",
-            "RowKey": self._sanitize_key(key),
-            "count": new_count,
-            "expiry": new_expiry,
-            "updated": datetime.now(timezone.utc).isoformat()
-        })
-        
-        return new_count
-    
-    def get(self, key: str) -> int:
-        """Get the current counter value for a key."""
-        entity = self._get_entity(key)
-        return entity.get("count", 0) if entity else 0
-    
-    def get_expiry(self, key: str) -> int:
-        """Get the expiry time for a key."""
-        entity = self._get_entity(key)
-        return int(entity.get("expiry", 0)) if entity else 0
-    
-    def check(self) -> bool:
-        """Check if storage is available."""
-        try:
-            # Try to query the table
-            list(self.table_client.query_entities("PartitionKey eq 'ratelimit'", results_per_page=1))
-            return True
-        except Exception:
-            return False
-    
-    def reset(self) -> Optional[int]:
-        """Reset all rate limits (delete all entities)."""
-        try:
-            count = 0
-            for entity in self.table_client.query_entities("PartitionKey eq 'ratelimit'"):
-                self.table_client.delete_entity(entity)
-                count += 1
-            return count
-        except Exception:
-            return None
-    
-    def clear(self, key: str) -> None:
-        """Clear a specific key."""
-        self._delete_entity(key)
-    
-    @property
-    def base_exceptions(self) -> Tuple[type, ...]:
-        """
-        Return tuple of exceptions that should trigger a fallback to in-memory storage.
-        
-        Required by the limits library Storage base class.
-        
-        Returns:
-            Tuple of exception types
-        """
-        return (Exception,)
-    
-    def get_moving_window(self, key: str, limit: int, expiry: int) -> Tuple[int, int]:
-        """
-        Get the moving window information for a key.
-        
-        Required by the limits library for moving window rate limiting.
-        
-        Args:
-            key: The rate limit key
-            limit: The rate limit
-            expiry: The window size in seconds
-            
-        Returns:
-            Tuple of (timestamp of window start, count of requests in window)
-        """
-        entity = self._get_entity(key)
-        if entity:
-            # Return the window start time and current count
-            window_start = int(entity.get("expiry", time.time()) - expiry)
-            return (window_start, entity.get("count", 0))
-        return (int(time.time()), 0)
-
-
 def get_client_ip(request: Request) -> str:
     """
     Extract the real client IP address, handling reverse proxy headers.
@@ -390,10 +184,8 @@ def get_client_ip(request: Request) -> str:
 
 
 # Register custom storage backend with limits library
-from limits.strategies import FixedWindowRateLimiter
-import limits.storage as limits_storage
-
 limits_storage.SCHEMES["azuretable"] = AzureTableStorage
+
 
 def create_limiter() -> Limiter:
     """
@@ -411,7 +203,7 @@ def create_limiter() -> Limiter:
         try:
             # Test if we can connect to Azure Table Storage
             print(f"🔄 Attempting to connect to Azure Table Storage (account: {storage_account})...")
-            azure_storage = AzureTableStorage(uri="azuretable://")
+            azure_storage = AzureTableStorage(uri="azuretable://", credential=credential)
             if azure_storage.check():
                 print(f"✅ Using Azure Table Storage for rate limiting (account: {storage_account})")
                 # Create limiter with memory storage first (it will be overridden)
@@ -436,100 +228,6 @@ def create_limiter() -> Limiter:
 
 # Initialize rate limiter (persistent with Azure Table Storage, or in-memory fallback)
 limiter = create_limiter()
-
-
-# =============================================================================
-# Input Sanitization
-# =============================================================================
-
-def sanitize_input(text: str) -> Tuple[str, bool]:
-    """
-    Sanitize user input and detect potential prompt injection attacks.
-    
-    Performs the following checks and transformations:
-    1. Checks for suspicious patterns that may indicate prompt injection
-    2. Removes non-printable control characters (except newlines/tabs)
-    3. Normalizes excessive whitespace
-    
-    Args:
-        text: Raw user input string
-        
-    Returns:
-        Tuple of (sanitized_text, is_suspicious)
-        - sanitized_text: Cleaned input string
-        - is_suspicious: True if prompt injection patterns were detected
-    """
-    # Check for suspicious patterns
-    for pattern in COMPILED_PATTERNS:
-        if pattern.search(text):
-            return text, True
-    
-    # Remove non-printable control characters (preserve newlines and tabs)
-    sanitized = ''.join(char for char in text if char.isprintable() or char in '\n\t')
-    
-    # Collapse excessive whitespace (10+ consecutive spaces)
-    sanitized = re.sub(r'\s{10,}', ' ', sanitized)
-    
-    return sanitized, False
-
-
-# =============================================================================
-# SSE (Server-Sent Events) Helpers
-# =============================================================================
-
-def sse_message(content: str = None, done: bool = False, is_job_related: bool = True, error: str = None) -> str:
-    """
-    Format a Server-Sent Event message.
-    
-    Args:
-        content: Text content to stream
-        done: Whether this is the final message
-        is_job_related: Whether the response was job-related (for analytics)
-        error: Error type if an error occurred
-        
-    Returns:
-        SSE-formatted string (data: {...}\n\n)
-    """
-    data = {}
-    if content is not None:
-        data["content"] = content
-    if done:
-        data["done"] = True
-        data["is_job_related"] = is_job_related
-    if error:
-        data["error"] = error
-    return f"data: {json.dumps(data)}\n\n"
-
-
-async def create_fun_message_stream(is_job_related: bool = False) -> AsyncGenerator[str, None]:
-    """
-    Create an SSE stream that returns a random fun message.
-    
-    Used for off-topic questions and suspicious input.
-    
-    Args:
-        is_job_related: Flag indicating if response is job-related
-        
-    Yields:
-        SSE-formatted messages
-    """
-    message = random.choice(FUN_MESSAGES)
-    yield sse_message(content=message)
-    yield sse_message(done=True, is_job_related=is_job_related)
-
-
-def get_sse_headers() -> Dict[str, str]:
-    """
-    Get standard headers for SSE streaming responses.
-    
-    Returns:
-        Dictionary of HTTP headers optimized for SSE
-    """
-    return {
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
-        "X-Accel-Buffering": "no",  # Disable nginx/proxy buffering
-    }
 
 
 # =============================================================================
