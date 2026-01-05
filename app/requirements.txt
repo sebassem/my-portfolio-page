@@ -1,7 +1,7 @@
 # Requirements for litellm_app.py (simplified implementation)
 openai>=1.0.0
 pydantic==2.12.5
-pyyaml==6.0.2
+pyyaml==6.0.3
 azure-identity==1.26.0b1
 azure-search-documents==11.6.0b8
 azure-data-tables>=12.5.0
