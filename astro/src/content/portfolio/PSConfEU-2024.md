@@ -13,7 +13,7 @@ I had an incredible opportunity to participate and deliver two sessions in the [
 
 **Azure Arc Unleashed: Engage, Learn, and Master:** Co-presented with my colleague Jan Egil Ring we delivered a 90-minutes follow-along session where we talked about the value of Azure Arc, the Azure Arc Jumpstart project and how to leverage it's content and lots of hands-on demos.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/km7TYC2hEYg" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/OsiOGjujCYw" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 **Azure Verified Modules (AVM):** The format of this session was really fun where I needed to deliver a topic using exactly 20 slides with exactly 20 seconds per slide. In this session, I talked about what is AVM, why was it created, what value does it bring and how to start using it whether you are using Bicep or Terraform.
 
