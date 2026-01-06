@@ -9,8 +9,8 @@ param deployments = [
     name: 'llm-deployment'
     model: {
       format: 'OpenAI'
-      name: 'gpt-4o-mini'
-      version: '2024-07-18'
+      name: 'gpt-4.1-nano'
+      version: '2025-04-14'
     }
     sku: {
       capacity: 150
