@@ -2,7 +2,7 @@ import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
 
 const portfolio = defineCollection({
-  loader: glob({ pattern: "**/*.md", base: "./src/content/portfolio" }),
+  loader: glob({ pattern: "**/*.{md,markdown}", base: "./src/content/portfolio" }),
   schema: z.object({
     name: z.string(),
     category: z.array(z.enum(['AI', 'Architecture', 'Contributions', 'Public speaking'])),
