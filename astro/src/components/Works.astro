@@ -7,8 +7,8 @@ import arrowCard from "../assets/arrow-card.svg";
 
 type PortfolioEntry = CollectionEntry<"portfolio">;
 
-// Get portfolio items from content collection
-const portfolioEntries: PortfolioEntry[] = await getCollection("portfolio");
+// Get portfolio items from content collection (excluding hidden items)
+const portfolioEntries: PortfolioEntry[] = await getCollection("portfolio", ({ data }) => !data.hidden);
 const portfolio = portfolioEntries.sort((a, b) => (a.data.order || 99) - (b.data.order || 99));
 
 // Get unique categories for tabs (flatten arrays and dedupe)
