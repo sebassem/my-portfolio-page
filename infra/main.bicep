@@ -425,28 +425,28 @@ module containerAppAstro 'br/public:avm/res/app/container-app:0.19.0' = {
 module nsp 'br/public:avm/res/network/network-security-perimeter:0.1.3' = {
   scope: rg
   params: {
-    name: 'nsp-${namingPrefix}-infra'
+    name: 'nsp-${namingPrefix}-infra-${namingSuffix}'
     location: location
     resourceAssociations: [
       {
         privateLinkResource: keyVault.outputs.resourceId
-        profile: 'nsp-${namingPrefix}-infra-profile'
+        profile: 'nsp-${namingPrefix}-infra-profile-${namingSuffix}'
         accessMode: 'Enforced'
       }
       {
         privateLinkResource: storageAccount.outputs.resourceId
-        profile: 'nsp-${namingPrefix}-infra-profile'
+        profile: 'nsp-${namingPrefix}-infra-profile-${namingSuffix}'
         accessMode: 'Enforced'
       }
       {
         privateLinkResource: foundry.outputs.foundryResourceId
-        profile: 'nsp-${namingPrefix}-infra-profile'
+        profile: 'nsp-${namingPrefix}-infra-profile-${namingSuffix}'
         accessMode: 'Enforced'
       }
     ]
     profiles: [
       {
-        name: 'nsp-${namingPrefix}-infra-profile'
+        name: 'nsp-${namingPrefix}-infra-profile-${namingSuffix}'
         accessRules: [
           {
             name: 'inbound'
