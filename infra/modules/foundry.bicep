@@ -1,10 +1,12 @@
 param location string = resourceGroup().location
 
-param namingSuffix string = 'sbmo'
+param namingSuffix string = '001'
 
-param foundryAccountName string = 'foundry${namingSuffix}infra'
+param namingPrefix string = 'sbm'
 
-param foundryProjectName string = '${foundryAccountName}-project'
+param foundryAccountName string = 'foundry${namingPrefix}infra${namingSuffix}'
+
+param foundryProjectName string = '${foundryAccountName}-project-${namingSuffix}'
 
 param aiSearchPrincipalId string = ''
 

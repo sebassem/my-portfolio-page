@@ -2,29 +2,31 @@ targetScope = 'subscription'
 
 param location string = deployment().location
 
-param namingSuffix string = 'sbm'
+param namingSuffix string = '001'
 
-param resourceGroupName string = 'rg-${namingSuffix}-infra'
+param namingPrefix string = 'sbm'
 
-param acrName string = 'acrportfolio${namingSuffix}infra'
+param resourceGroupName string = 'rg-${namingPrefix}-infra-${namingSuffix}'
 
-param containerAppsIdentityName string = 'uai-${namingSuffix}-apps-infra'
+param acrName string = 'acrportfolio${namingPrefix}infra${namingSuffix}'
 
-param storageAccountName string = 'stg${namingSuffix}infra'
+param containerAppsIdentityName string = 'uai-${namingPrefix}-apps-infra-${namingSuffix}'
 
-param foundryAccountName string = 'foundry-${namingSuffix}-infra'
+param storageAccountName string = 'stg${namingPrefix}infra${namingSuffix}'
 
-param foundryProjectName string = '${foundryAccountName}-project'
+param foundryAccountName string = 'foundry-${namingPrefix}-infra-${namingSuffix}'
 
-param keyVaultName string = 'kv-${namingSuffix}-infra'
+param foundryProjectName string = '${foundryAccountName}-project-${namingSuffix}'
 
-param aiSearchName string = 'aisearch${namingSuffix}infra'
+param keyVaultName string = 'kv-${namingPrefix}-infra-${namingSuffix}'
 
-param containerAppsEnvironmentName string = 'cae-${namingSuffix}-infra'
+param aiSearchName string = 'aisearch${namingPrefix}infra${namingSuffix}'
 
-param containerAppName string = 'ca-${namingSuffix}-infra'
+param containerAppsEnvironmentName string = 'cae-${namingPrefix}-infra-${namingSuffix}'
 
-param containerAppAstroName string = 'ca-astro-${namingSuffix}-infra'
+param containerAppName string = 'ca-${namingPrefix}-infra-${namingSuffix}'
+
+param containerAppAstroName string = 'ca-astro-${namingPrefix}-infra-${namingSuffix}'
 
 param aiSearchSku string = 'basic'
 
@@ -129,7 +131,7 @@ module foundry 'modules/foundry.bicep' = {
     foundryAccountName: foundryAccountName
     foundryProjectName: foundryProjectName
     location: location
-    namingSuffix: namingSuffix
+    namingPrefix: namingPrefix
     aiSearchPrincipalId: aiSearch.outputs.?systemAssignedMIPrincipalId
     containerAppsPrincipalId: containerAppsIdentity.outputs.principalId
   }
@@ -423,28 +425,28 @@ module containerAppAstro 'br/public:avm/res/app/container-app:0.19.0' = {
 module nsp 'br/public:avm/res/network/network-security-perimeter:0.1.3' = {
   scope: rg
   params: {
-    name: 'nsp-${namingSuffix}-infra'
+    name: 'nsp-${namingPrefix}-infra'
     location: location
     resourceAssociations: [
       {
         privateLinkResource: keyVault.outputs.resourceId
-        profile: 'nsp-${namingSuffix}-infra-profile'
+        profile: 'nsp-${namingPrefix}-infra-profile'
         accessMode: 'Enforced'
       }
       {
         privateLinkResource: storageAccount.outputs.resourceId
-        profile: 'nsp-${namingSuffix}-infra-profile'
+        profile: 'nsp-${namingPrefix}-infra-profile'
         accessMode: 'Enforced'
       }
       {
         privateLinkResource: foundry.outputs.foundryResourceId
-        profile: 'nsp-${namingSuffix}-infra-profile'
+        profile: 'nsp-${namingPrefix}-infra-profile'
         accessMode: 'Enforced'
       }
     ]
     profiles: [
       {
-        name: 'nsp-${namingSuffix}-infra-profile'
+        name: 'nsp-${namingPrefix}-infra-profile'
         accessRules: [
           {
             name: 'inbound'

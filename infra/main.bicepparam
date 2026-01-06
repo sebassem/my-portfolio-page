@@ -1,10 +1,11 @@
 using './main.bicep'
 
 param location = 'swedencentral'
-param namingSuffix = 'sbm'
+param namingPrefix = 'sbm'
+param namingSuffix = '001'
 param aiSearchSku = 'free'
 param deployments = [
-  {
+  /*{
     name: 'llm-deployment'
     model: {
       format: 'DeepSeek'
@@ -12,7 +13,19 @@ param deployments = [
       version: '1'
     }
     sku: {
-      capacity: 250
+      capacity: 20
+      name: 'GlobalStandard'
+    }
+  }*/
+  {
+    name: 'llm-deployment'
+    model: {
+      format: 'OpenAI'
+      name: 'gpt-4o-mini'
+      version: '2024-07-18'
+    }
+    sku: {
+      capacity: 150
       name: 'GlobalStandard'
     }
   }
