@@ -15,6 +15,8 @@ Co-authored the Azure Advisor cost optimization workbook in collaboration with t
 - **Product Group Collaboration** - Worked directly with Azure Advisor team
 - **Wide Adoption** - ~1,800 monthly active users
 - **Cost Savings Impact** - Scaled this workbook to be used by the field in customer engagements, helping hundreds of customers optimize their Azure spend
+- **40% Reduction** - Reduced time and cost of Well-Architected assessment deliveries by ~40% by using this workbook
+- **Training & Enablement** - Conducted training sessions, webinars, and bootcamps to level-up the field on this new tool
 
 ![Screenshot showing the azure advisor workbook](https://images.seifbassem.com/images/portfolio/cost-optimization-workbook/load-balancers.png)
 
