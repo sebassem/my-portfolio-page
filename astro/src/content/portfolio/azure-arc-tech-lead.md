@@ -1,7 +1,7 @@
 ---
 name: "Azure Arc - Global Tech Lead"
-category: ["Public speaking", "Architecture"]
-cover: "https://images.pexels.com/photos/1148820/pexels-photo-1148820.jpeg?auto=compress&cs=tinysrgb&w=1600"
+category: ["Contributions"]
+cover: "https://images.seifbassem.com/images/portfolio/arc-tech-lead/banner.png"
 link: "https://azure.microsoft.com/products/azure-arc"
 order: 9
 featured: true
@@ -14,10 +14,8 @@ Acted as global tech lead for Azure Arc, restructuring field content to align wi
 ### Key Achievements
 
 - **Global Leadership** - Tech lead for Azure Arc across all regions
-- **Content Restructuring** - Aligned field content with FY25 priorities
-- **Workshop Development** - Built a comprehensive 2-day hands-on workshop
-- **Massive Delivery** - **350+ workshop deliveries worldwide**
-- **Revenue Impact** - **~$2.6M in Unified consumed revenue**
+- **Content Restructuring** - Aligned field content with FY25 priorities, by building new deliveries, workshops, decks and tools for the field, customers and partners
+- **Workshop Development** - Built a comprehensive 2-days hands-on workshop that helps customers experience the full Azure Arc capabilities in a contained sandbox environment for evaluation and skilling-up purposes.
 
 ### Impact Metrics
 
@@ -26,30 +24,6 @@ Acted as global tech lead for Azure Arc, restructuring field content to align wi
 | Workshop Deliveries | 350+ worldwide |
 | Unified Consumed Revenue | ~$2.6M |
 | Workshop Duration | 2 Days (Hands-on) |
-
-### Workshop Details
-
-**Duration:** 2 Days (Hands-on)
-
-**Deliveries:** 350+ worldwide
-
-**Revenue Generated:** ~$2.6M in Unified consumed revenue
-
-### Topics Covered
-
-- Azure Arc-enabled servers
-- Azure Arc-enabled Kubernetes
-- Azure Arc-enabled data services
-- Azure Arc-enabled application services
-- Hybrid management scenarios
-- Edge computing patterns
-
-### Impact
-
-- Trained field teams globally on Azure Arc capabilities
-- Enabled partners and customers to adopt hybrid cloud strategies
-- Standardized Azure Arc training content worldwide
-- Directly contributed to significant Unified revenue
 
 ### Technologies
 

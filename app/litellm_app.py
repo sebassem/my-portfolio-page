@@ -63,8 +63,8 @@ CACHE_TTL = int(os.getenv("CACHE_TTL_SECONDS", "3600"))
 
 # Rate limit for API requests (default: 3 requests per week per IP)
 # Note: limits library supports second/minute/hour/day/month/year
-# For weekly, use "10/day" format
-RATE_LIMIT = os.getenv("RATE_LIMIT", "10/day")
+# For weekly, use "3/day" format
+RATE_LIMIT = os.getenv("RATE_LIMIT", "3/day")
 
 # Maximum question length (matches client-side validation)
 MAX_QUESTION_LENGTH = 4000
@@ -282,7 +282,7 @@ def retrieve_context(query: str, top_k: int = SEARCH_TOP_K) -> str:
     try:
         # Generate embedding for the query
         query_embedding = get_embedding(query)
-        
+
         # Get semantic configuration name - use explicit env var or construct from index name
         index_name = os.getenv('AZURE_SEARCH_INDEX_NAME')
         default_semantic_config = f"{index_name}-semantic-configuration" if index_name else "portfolio-rag-index-semantic-configuration"

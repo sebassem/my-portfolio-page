@@ -1,54 +1,28 @@
 ---
-name: "Azure Arc-enabled Servers Enterprise Scale LZA"
+name: "Azure Arc-enabled Servers Enterprise Scale landing zone accelerator"
 category: ["Architecture"]
-cover: "https://images.pexels.com/photos/325229/pexels-photo-325229.jpeg?auto=compress&cs=tinysrgb&w=1600"
+cover: "https://images.seifbassem.com/images/portfolio/lza-accelerators/lza-servers.png"
 link: "https://learn.microsoft.com/azure/cloud-adoption-framework/scenarios/hybrid/enterprise-scale-landing-zone"
 order: 17
 ---
 
 ## Project Overview
 
-Worked as part of a virtual team to create the Azure Arc-enabled Servers Enterprise Scale Landing Zone Accelerator, leading the authoring of two critical design areas and contributing to managed IP development.
+Worked as part of a virtual team to create the Azure Arc-enabled Servers Enterprise Scale Landing Zone Accelerator, leading the authoring of two critical design areas and contributing to IP development for our field resources.
 
 ### Key Achievements
 
-- **2 Design Areas Authored** - Led Cost Governance and Management design areas
-- **Managed IP Development** - Contributed to envisioning, building, and managing new IP
-- **Customer Value** - Helped customers realize value for their hybrid resources
+- **2 Design areas authored** - Led Cost Governance and Management design areas detailing design considerations and recommendations for implementing the solution at scale.
+- **Managed IP Development** - Contributed to envisioning, building, and managing new IP based on the landing zone accelerator to provide a scalable method where our field resources can have a repeatable method of guiding customers to adopt the accelerator
+- **Sandbox Development** - Contributed to building the hands-on sandbox solution for the product, including solution automation via Bicep and PowerShell
 
-### Design Areas Led
-
-#### 1. Cost Governance
-- Cost allocation for hybrid server estates
-- Licensing considerations (Azure Hybrid Benefit)
-- Chargeback models for Arc-enabled servers
-- Budget tracking and optimization
-
-#### 2. Management
-- Unified management across on-premises and cloud
-- Update management strategies
-- Configuration management
-- Inventory and change tracking
-
-### Managed IP Contributions
-
-Contributed to **envisioning, building, and managing new Managed IP** for Azure Arc-enabled servers to:
-- Drive more growth in hybrid scenarios
-- Empower customers to realize value for their hybrid resources
-- Accelerate adoption of Arc-enabled servers
-
-### Enterprise Scale Architecture
-
-The accelerator implements:
-- **Hybrid Identity** - Unified identity management
-- **Network Connectivity** - Secure connectivity patterns
-- **Governance** - Policy-driven compliance
-- **Management** - Centralized operations
+![Screenshot showing Arcbox for ITPros architecture](https://images.seifbassem.com/images/portfolio/lza-accelerators/lza-servers-arcbox-itpros.png)
 
 ### Technologies Used
 
 - Azure Arc-enabled Servers
 - Azure Policy
+- Bicep
 - Azure Monitor
 - Azure Automation
 - Azure Update Management

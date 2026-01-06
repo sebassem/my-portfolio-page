@@ -1,6 +1,6 @@
 ---
 name: "Microsoft Learn Module - Azure Monitor Workbooks"
-category: ["Content"]
+category: ["Contributions"]
 cover: "https://images.pexels.com/photos/5905709/pexels-photo-5905709.jpeg?auto=compress&cs=tinysrgb&w=1600"
 link: "https://learn.microsoft.com/training/modules/visualize-data-workbooks/"
 order: 14

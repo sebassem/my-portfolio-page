@@ -1,15 +1,22 @@
 ---
-name: "Microsoft Ignite 2024 - AI Workshop"
+name: "Microsoft Ignite 2024 - Next-Gen Industrial Transformation Architecture Patterns"
 category: ["Public speaking", "AI"]
-cover: "https://images.pexels.com/photos/2774556/pexels-photo-2774556.jpeg?auto=compress&cs=tinysrgb&w=1600"
+cover: "https://images.seifbassem.com/images/portfolio/ignite/banner.png"
 link: "https://ignite.microsoft.com"
 order: 5
 featured: true
 ---
 
-## Project Overview
+## Overview
 
 At Microsoft Ignite 2024, led a hands-on pre-day workshop titled **"Explore Next-Gen Industrial Transformation Architecture Patterns"**, teaching attendees how to build next-generation AI solution architectures for manufacturing using the Azure AI platform.
+
+![Screenshot showing ignite photo](https://images.seifbassem.com/images/portfolio/ignite/photo1.jpg)
+
+![Screenshot showing ignite photo](https://images.seifbassem.com/images/portfolio/ignite/photo2.jpg)
+
+![Screenshot showing ignite photo](https://images.seifbassem.com/images/portfolio/ignite/photo3.jpg)
+
 
 ### Workshop Details
 
@@ -29,7 +36,7 @@ At Microsoft Ignite 2024, led a hands-on pre-day workshop titled **"Explore Next
 
 - How to architect AI solutions for manufacturing environments
 - Edge computing patterns for industrial IoT
-- Integrating Azure AI services with Kubernetes
+- Integrating Azure AI services with edge environments
 - Best practices for cloud-to-edge deployments
 - Real-time data processing and analytics
 
@@ -38,6 +45,5 @@ At Microsoft Ignite 2024, led a hands-on pre-day workshop titled **"Explore Next
 - Azure OpenAI Service
 - Azure AI Services
 - Azure Arc-enabled Kubernetes
-- Azure IoT Hub
-- Azure Machine Learning
+- Azure IoT operations
 - Kubernetes (AKS, AKS Edge Essentials)

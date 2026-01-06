@@ -1,8 +1,8 @@
 ---
 name: "Azure Landing Zones - Core Maintainer"
-category: ["Contributions", "Architecture"]
-cover: "https://images.pexels.com/photos/1181467/pexels-photo-1181467.jpeg?auto=compress&cs=tinysrgb&w=1600"
-link: "https://github.com/Azure/ALZ-Bicep"
+category: ["Architecture"]
+cover: "https://images.seifbassem.com/images/portfolio/alz/banner.png"
+link: "https://learn.microsoft.com/azure/cloud-adoption-framework/ready/landing-zone/"
 order: 6
 featured: true
 ---
@@ -11,12 +11,16 @@ featured: true
 
 Core maintainer for Azure Landing Zones (ALZ) and leading the **feature alignment workstream** to track, prioritize, and implement new Azure features across the different ALZ workstreams.
 
+![Screenshot showing alz architecture](https://images.seifbassem.com/images/portfolio/alz/alz-architecture.png)
+
 ### Key Achievements
 
+- **Implemented new features and enhancements** - Including defaulting to zone resiliency, multi-region guidance, brownfield migrations and more
 - **Accelerated Delivery Velocity** - Cut feature intake and release cycle from quarters to weeks
 - **~12 Features Released** - Led the release of approximately 12 new features and capabilities (new and replaced deprecated ones)
 - **Improved Cross-Team Collaboration** - Enhanced coordination between ALZ workstreams and Azure product teams
-- **Faster Azure Adoption** - Enabled customers to leverage new Azure capabilities sooner
+- **Faster Azure Adoption** - Enabled customers to leverage and adopt new Azure capabilities/services once they are generally available according to best practices and recommendations.
+- **Authored multiple articles** -  on the Cloud Adoption Framework (CAF) documentation, highlighting real customer scenarios on transitioning to Azure Landing Zones with an average of 2,360 monthly page views. Providing guidance and best practices on transitioning existing Azure environments to ALZ
 
 ### Impact Metrics
 
@@ -24,7 +28,6 @@ Core maintainer for Azure Landing Zones (ALZ) and leading the **feature alignmen
 |--------|-------|
 | New Features Released | ~12 |
 | Delivery Cycle Improvement | Quarters → Weeks |
-| Workstreams Coordinated | Multiple |
 
 ### Feature Alignment Workstream
 
@@ -37,7 +40,7 @@ As the lead for the feature alignment workstream, responsibilities include:
 
 ### Responsibilities
 
-- Code reviews and pull request management
+- Code contributions (Bicep, PowerShell) and code reviews
 - Feature planning and prioritization
 - Documentation and best practices
 - Community support and engagement
@@ -46,7 +49,7 @@ As the lead for the feature alignment workstream, responsibilities include:
 ### Technologies
 
 - Bicep
-- Azure Resource Manager
+- Networking
+- Security
 - GitHub Actions
 - Azure Policy
-- Azure Management Groups

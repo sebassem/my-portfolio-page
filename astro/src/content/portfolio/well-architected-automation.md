@@ -1,6 +1,6 @@
 ---
 name: "Well-Architected Assessment Automation"
-category: ["Content", "Architecture"]
+category: ["Contributions"]
 cover: "https://images.pexels.com/photos/7947663/pexels-photo-7947663.jpeg?auto=compress&cs=tinysrgb&w=1600"
 link: "https://learn.microsoft.com/azure/well-architected/"
 order: 16

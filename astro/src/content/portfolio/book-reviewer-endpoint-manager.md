@@ -1,9 +1,9 @@
 ---
 name: "Technical Reviewer - Mastering Microsoft Endpoint Manager"
-category: ["Content"]
-cover: "https://images.pexels.com/photos/1181671/pexels-photo-1181671.jpeg?auto=compress&cs=tinysrgb&w=1600"
-link: "https://www.packtpub.com/product/mastering-microsoft-endpoint-manager/9781801078436"
-order: 18
+category: ["Contributions"]
+cover: "https://images.seifbassem.com/images/portfolio/book-review/banner.jpg"
+link: "https://www.packtpub.com/en-us/product/mastering-microsoft-endpoint-manager-9781801072175?srsltid=AfmBOopRKKGXb7fiNQ8P-1_l7zB_mmP1XbTC7-9MEqecW6RvhJB7UtSl"
+order: 19
 ---
 
 ## Project Overview
@@ -15,14 +15,6 @@ Contributed as a technical reviewer for the book "Mastering Microsoft Endpoint M
 - **Technical Reviewer** - Ensured accuracy of technical content
 - **1,300+ Copies Sold** - In the first month of publication
 - **Quality Assurance** - Validated code samples, configurations, and procedures
-
-### Impact Metrics
-
-| Metric | Value |
-|--------|-------|
-| Role | Technical Reviewer |
-| First Month Sales | 1,300+ copies |
-| Publisher | Packt Publishing |
 
 ### Contribution Areas
 

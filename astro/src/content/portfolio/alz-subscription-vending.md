@@ -1,31 +1,33 @@
 ---
 name: "ALZ Subscription Vending Module"
 category: ["Contributions", "Architecture"]
-cover: "https://images.pexels.com/photos/546819/pexels-photo-546819.jpeg?auto=compress&cs=tinysrgb&w=1600"
-link: "https://github.com/Azure/bicep-lz-vending"
-order: 5
+cover: "https://images.seifbassem.com/images/portfolio/subscription-vending/banner.png"
+link: "https://github.com/Azure/bicep-lz-vending/wiki"
+order: 18
 featured: true
 ---
 
 ## Project Overview
 
-Lead developer of the Azure Landing Zones subscription vending Bicep module, enabling automated and standardized subscription provisioning at scale.
+Lead maintainer of the Azure Landing Zones subscription vending Bicep module, enabling automated and standardized subscription provisioning at scale.
 
 ### Key Achievements
 
-- **Migration to Azure Verified Modules** - Successfully migrated the module to AVM
-- **14 Releases** - Delivered continuous improvements and new features
-- **Massive Adoption** - 10K+ deployments across 125 tenants
-- **Community Reach** - Featured on John Savill's YouTube channel (~10K views)
+- **Migration to Azure Verified Modules(AVM)** - Successfully migrated the module from the public Bicep registry to AVM
+- **16+ Releases** - Delivered continuous improvements and new features
+- **Massive Adoption** - 18K+ deployments across 125 tenants as of 2025
+- **Community Reach** - Featured on [John Savill's YouTube channel (~13K views)](https://youtu.be/aIbtnk2F8Xo?si=UhBiM52T0-tzTxIQ)
+
+![Screenshot showing the subscription vending architecture](https://images.seifbassem.com/images/portfolio/subscription-vending/subscription-vending.png)
 
 ### Impact Metrics
 
 | Metric | Value |
 |--------|-------|
-| Total Deployments | 10,000+ |
-| Tenants Using Module | 125 |
-| Releases Delivered | ~14 |
-| YouTube Views | ~10,000 |
+| Total Deployments | 18,000+ |
+| Tenants Using Module | 125+ |
+| Releases Delivered in 2025 | ~15+ |
+| YouTube Views | ~13,000 |
 
 ### Features
 
@@ -33,11 +35,8 @@ Lead developer of the Azure Landing Zones subscription vending Bicep module, ena
 - Policy assignments
 - Role-based access control
 - Network connectivity options
+- Security and governance controls
 - Tagging and naming conventions
-
-### Collaboration
-
-Worked with John Savill to showcase the module on his popular YouTube channel, significantly increasing visibility and adoption across the Azure community.
 
 ### Technologies
 
@@ -46,3 +45,4 @@ Worked with John Savill to showcase the module on his popular YouTube channel, s
 - Azure Subscriptions
 - Azure Policy
 - Azure RBAC
+- Azure Networking
