@@ -393,6 +393,17 @@ module containerAppAstro 'br/public:avm/res/app/container-app:0.19.0' = {
             failureThreshold: 30
           }
           {
+            type: 'readiness'
+            httpGet: {
+              path: '/'
+              port: 4321
+            }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+            successThreshold: 1
+          }
+          {
             type: 'liveness'
             httpGet: {
               path: '/'
