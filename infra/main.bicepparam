@@ -4,6 +4,7 @@ param location = 'swedencentral'
 param namingPrefix = 'sbm'
 param namingSuffix = '001'
 param aiSearchSku = 'free'
+param containerAppDomain = 'portfolio.seifbassem.com'
 param deployments = [
   {
     name: 'llm-deployment'

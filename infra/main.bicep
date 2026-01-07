@@ -28,6 +28,8 @@ param containerAppName string = 'ca-${namingPrefix}-infra-${namingSuffix}'
 
 param containerAppAstroName string = 'ca-astro-${namingPrefix}-infra-${namingSuffix}'
 
+param containerAppDomain string = 'portfolio.seifbassem.com'
+
 param aiSearchSku string = 'basic'
 
 param deployments array = [
@@ -196,6 +198,8 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.13.3' = {
     ]
   }
 }
+
+
 module appsEnvironment 'br/public:avm/res/app/managed-environment:0.11.3' = {
   scope: rg
   params: {
@@ -206,6 +210,16 @@ module appsEnvironment 'br/public:avm/res/app/managed-environment:0.11.3' = {
     internal: false
   }
 }
+
+module containerAppCert 'modules/certificate.bicep' = {
+  scope: rg
+  params: {
+    appEnvironmentName: appsEnvironment.outputs.name
+    domainName: containerAppDomain
+    location: location
+  }
+}
+
 module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
   scope: rg
   params: {
@@ -369,6 +383,7 @@ module containerAppAstro 'br/public:avm/res/app/container-app:0.19.0' = {
     customDomains: [
       {
         name: 'portfolio.seifbassem.com'
+        bindingType: 'Auto'
       }
     ]
     containers: [
