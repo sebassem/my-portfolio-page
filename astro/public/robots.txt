@@ -1,0 +1,21 @@
+User-agent: *
+Allow: /
+
+# Reduce crawl rate to help with scale-to-zero
+Crawl-delay: 60
+
+# Block aggressive bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+Sitemap: https://seifbassem.com/sitemap.xml
+Sitemap: https://portfolio.seifbassem.com/sitemap.xml
