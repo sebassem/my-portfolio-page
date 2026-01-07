@@ -385,7 +385,7 @@ module containerAppAstro 'br/public:avm/res/app/container-app:0.19.0' = {
     ingressAllowInsecure: false
     customDomains: [
       {
-        name: 'portfolio.seifbassem.com'
+        name: containerAppDomain
         bindingType: 'Auto'
       }
     ]
