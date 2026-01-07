@@ -390,7 +390,7 @@ async def stream_ai_response(question: str) -> AsyncGenerator[str, None]:
             api_version="2024-05-01-preview",
             stream=True,
             max_tokens=1024,
-            num_retries=3,
+            num_retries=5,
             temperature=0.3,
             timeout=60,  # Longer timeout for streaming
         )
