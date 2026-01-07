@@ -366,6 +366,11 @@ module containerAppAstro 'br/public:avm/res/app/container-app:0.19.0' = {
     ingressExternal: true
     ingressTargetPort: 4321
     ingressAllowInsecure: false
+    customDomains: [
+      {
+        name: 'portfolio.seifbassem.com'
+      }
+    ]
     containers: [
       {
         image: '${acr.outputs.loginServer}/portfolio-astro:latest'
