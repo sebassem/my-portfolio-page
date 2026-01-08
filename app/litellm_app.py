@@ -72,9 +72,6 @@ MAX_QUESTION_LENGTH = 4000
 # Number of documents to retrieve from search
 SEARCH_TOP_K = 5
 
-# Buffer size for detecting OFF_TOPIC responses before streaming
-OFF_TOPIC_BUFFER_SIZE = 20
-
 
 # =============================================================================
 # Response Messages
@@ -118,6 +115,7 @@ def load_prompts(prompts_path: str = None) -> Dict:
 # Load prompts at module startup
 PROMPTS = load_prompts()
 ASSISTANT_PROMPT = PROMPTS["assistant_prompt"]
+CLASSIFICATION_PROMPT = PROMPTS["classification_prompt"]
 
 
 # =============================================================================
@@ -343,17 +341,56 @@ def is_rate_limit_error(exception: Exception) -> bool:
     return "429" in error_str or "rate limit" in error_str
 
 
+async def classify_question(question: str) -> bool:
+    """
+    Lightweight classification to determine if a question is job/career relevant.
+    
+    This is Stage 1 of the two-stage approach - uses minimal tokens (~150 input, ~1 output)
+    to filter off-topic questions BEFORE expensive RAG retrieval.
+    
+    Args:
+        question: User's sanitized question
+        
+    Returns:
+        True if the question is relevant (should proceed to RAG), False if off-topic
+    """
+    try:
+        # Get fresh Azure AD token
+        token = openai_token_provider()
+        
+        # Build lightweight classification prompt (no RAG context needed)
+        classification_message = CLASSIFICATION_PROMPT.format(question=question)
+        
+        response = await litellm.acompletion(
+            model=f"azure/{DEPLOYMENT_NAME}",
+            messages=[{"role": "user", "content": classification_message}],
+            api_base=AZURE_ENDPOINT,
+            api_key=token,
+            api_version="2024-05-01-preview",
+            max_tokens=5,  # Only need "RELEVANT" or "OFF_TOPIC"
+            temperature=0,  # Deterministic classification
+            timeout=10,
+        )
+        
+        result = response.choices[0].message.content.strip().upper()
+        is_relevant = "RELEVANT" in result
+        
+        print(f"🏷️ Classification: '{question[:50]}...' -> {result} (relevant={is_relevant})")
+        return is_relevant
+        
+    except Exception as e:
+        print(f"⚠️ Classification error: {e}. Defaulting to relevant (will use RAG).")
+        # On error, default to relevant to avoid blocking legitimate questions
+        return True
+
+
 async def stream_ai_response(question: str) -> AsyncGenerator[str, None]:
     """
     Stream LLM response chunks as Server-Sent Events.
 
-    This function:
-    1. Retrieves relevant context from Azure AI Search
-    2. Calls Azure OpenAI with streaming enabled
-    3. Buffers initial response to detect OFF_TOPIC before streaming
-    4. Yields SSE-formatted chunks for real-time display
-
-    Note: Streaming bypasses LiteLLM's response cache.
+    This function uses a two-stage approach for token efficiency:
+    1. Lightweight classification (~150 tokens) to filter off-topic questions
+    2. Full RAG retrieval + response only for relevant questions
 
     Args:
         question: User's sanitized question
@@ -361,7 +398,18 @@ async def stream_ai_response(question: str) -> AsyncGenerator[str, None]:
     Yields:
         SSE-formatted message strings
     """
-    # Step 1: Retrieve relevant context from portfolio documents
+    # Stage 1: Lightweight classification (no RAG, minimal tokens)
+    is_relevant = await classify_question(question)
+    
+    if not is_relevant:
+        # Off-topic: return fun message without expensive RAG retrieval
+        print(f"⏭️ Skipping RAG for off-topic question: '{question[:50]}...'")
+        async for msg in create_fun_message_stream():
+            yield msg
+        return
+    
+    # Stage 2: Question is relevant - proceed with full RAG pipeline
+    # Retrieve relevant context from portfolio documents
     context = retrieve_context(question)
     
     # Debug: Log context retrieval
@@ -370,7 +418,7 @@ async def stream_ai_response(question: str) -> AsyncGenerator[str, None]:
     else:
         print("⚠️ WARNING: No context retrieved from RAG!")
 
-    # Step 2: Build the conversation messages
+    # Build the conversation messages
     system_prompt = ASSISTANT_PROMPT.format(context=context)
     messages = [
         {"role": "system", "content": system_prompt},
@@ -381,7 +429,7 @@ async def stream_ai_response(question: str) -> AsyncGenerator[str, None]:
         # Get fresh Azure AD token for this request
         token = openai_token_provider()
 
-        # Step 3: Call Azure OpenAI with streaming
+        # Call Azure OpenAI with streaming
         response = await litellm.acompletion(
             model=f"azure/{DEPLOYMENT_NAME}",
             messages=messages,
@@ -395,42 +443,11 @@ async def stream_ai_response(question: str) -> AsyncGenerator[str, None]:
             timeout=60,  # Longer timeout for streaming
         )
 
-        # Step 4: Buffer initial chunks to detect OFF_TOPIC
-        # We need to check if the response starts with "OFF_TOPIC" before streaming
-        buffer = ""
-        streaming_started = False
-
+        # Stream response chunks directly (no buffering needed)
         async for chunk in response:
             if chunk.choices and chunk.choices[0].delta.content:
                 content = chunk.choices[0].delta.content
-
-                if not streaming_started:
-                    # Still buffering to detect OFF_TOPIC
-                    buffer += content
-
-                    # Check if we have enough content to determine if it's off-topic
-                    if len(buffer) >= OFF_TOPIC_BUFFER_SIZE or "OFF_TOPIC" in buffer:
-                        if buffer.strip().startswith("OFF_TOPIC"):
-                            # Off-topic detected: return fun message instead
-                            async for msg in create_fun_message_stream():
-                                yield msg
-                            return
-                        else:
-                            # Not off-topic: flush buffer and start streaming
-                            streaming_started = True
-                            yield sse_message(content=buffer)
-                else:
-                    # Normal streaming mode
-                    yield sse_message(content=content)
-
-        # Handle case where response was shorter than buffer limit
-        if not streaming_started and buffer:
-            if buffer.strip().startswith("OFF_TOPIC"):
-                async for msg in create_fun_message_stream():
-                    yield msg
-                return
-            else:
-                yield sse_message(content=buffer)
+                yield sse_message(content=content)
 
         # Send completion event
         yield sse_message(done=True)
