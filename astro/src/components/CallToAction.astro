@@ -18,10 +18,11 @@ import svgHl from "../assets/hl.svg";
       <div class="relative">
         <textarea
           id="ai-question"
-          class="w-full p-3 pb-8 border-2 border-black rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-pink-400"
+          class="w-full p-3 pb-8 border-2 border-black rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-pink-400 overflow-hidden"
           rows="3"
           maxlength="4000"
-          placeholder="Type your job description here..."></textarea>
+          placeholder="Type your job description here..."
+          style="min-height: 84px;"></textarea>
         <span id="char-count" class="absolute bottom-2 right-3 text-sm text-gray-500">0/4000</span>
       </div>
       <p class="text-sm text-gray-500 flex items-center justify-center gap-1">
@@ -167,6 +168,14 @@ import svgHl from "../assets/hl.svg";
 
   const charCount = document.getElementById("char-count");
 
+  // Auto-resize textarea function
+  function autoResize() {
+    if (aiQuestion) {
+      aiQuestion.style.height = 'auto';
+      aiQuestion.style.height = aiQuestion.scrollHeight + 'px';
+    }
+  }
+
   // Enable/disable button based on textbox content
   aiQuestion?.addEventListener("input", () => {
     const hasText = aiQuestion.value.trim().length > 0;
@@ -179,6 +188,8 @@ import svgHl from "../assets/hl.svg";
     if (charCount) {
       charCount.textContent = `${aiQuestion.value.length}/4000`;
     }
+    // Auto-resize textarea
+    autoResize();
   });
 
   askAiBtn?.addEventListener("click", async () => {
