@@ -28,9 +28,14 @@ param containerAppName string = 'ca-${namingPrefix}-infra-${namingSuffix}'
 
 param containerAppAstroName string = 'ca-astro-${namingPrefix}-infra-${namingSuffix}'
 
-param containerAppDomain string = 'portfolio.seifbassem.com'
+param containerAppDomain string = 'seifbassem.com'
 
 param aiSearchSku string = 'basic'
+
+param certKeyVaultName string = 'kvastrocert001'
+
+param certName string = 'cloudflare'
+
 
 param deployments array = [
   {
@@ -162,6 +167,23 @@ module aiSearch 'br/public:avm/res/search/search-service:0.12.0' = {
   }
 }
 
+module certKeyVault 'modules/certKeyvault.bicep' = {
+  scope: resourceGroup(subscription().subscriptionId,'umi-rg')
+  params: {
+    certKeyVaultName: certKeyVaultName
+  }
+}
+
+module certKeyVaultRoleAssignment 'br/public:avm/ptn/authorization/resource-role-assignment:0.1.2' = {
+  scope: resourceGroup(subscription().subscriptionId,'umi-rg')
+  params: {
+    principalId: containerAppsIdentity.outputs.principalId
+    resourceId: certKeyVault.outputs.certKeyVaultResourceId
+    roleDefinitionId: 'db79e9a7-68ee-4b58-9aeb-b90e7c24fcba'
+    description: 'Key Vault Certificate User'
+  }
+}
+
 module keyVault 'br/public:avm/res/key-vault/vault:0.13.3' = {
   scope: rg
   params: {
@@ -199,26 +221,37 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.13.3' = {
   }
 }
 
-
-module appsEnvironment 'br/public:avm/res/app/managed-environment:0.11.3' = {
+module appEnvironment 'modules/appEnvironment.bicep' = {
   scope: rg
+  name: 'appEnvDeployment'
+  params: {
+    certificateName: certName
+    containerAppsEnvironmentName: containerAppsEnvironmentName
+    location: location
+    containerAppsIdentityResourceId: containerAppsIdentity.outputs.resourceId
+    keyVaultUrl: '${certKeyVault.outputs.keyVaultUri}secrets/${certName}'
+  }
+
+}
+/*module appsEnvironment2 'br/public:avm/res/app/managed-environment:0.11.3' = {
+  scope: rg
+  dependsOn: [
+    certKeyVaultRoleAssignment
+  ]
   params: {
     name: containerAppsEnvironmentName
     location: location
     publicNetworkAccess: 'Enabled'
     zoneRedundant: false
     internal: false
+    certificate: {
+      certificateKeyVaultProperties: {
+        identityResourceId: containerAppsIdentity.outputs.resourceId
+        keyVaultUrl: certKeyVault.outputs.certKeyURI
+      }
+    }
   }
-}
-
-module containerAppCert 'modules/certificate.bicep' = {
-  scope: rg
-  params: {
-    appEnvironmentName: appsEnvironment.outputs.name
-    domainName: containerAppDomain
-    location: location
-  }
-}
+}*/
 
 module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
   scope: rg
@@ -335,7 +368,7 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
         }
       ]
     }
-    environmentResourceId: appsEnvironment.outputs.resourceId
+    environmentResourceId: appEnvironment.outputs.appEnvResourceId
     identitySettings: [
       {
         identity: containerAppsIdentity.outputs.resourceId
@@ -363,9 +396,6 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
 
 module containerAppAstro 'br/public:avm/res/app/container-app:0.19.0' = {
   scope: rg
-  dependsOn: [
-    containerAppCert
-  ]
   params: {
     name: containerAppAstroName
     location: location
@@ -387,6 +417,7 @@ module containerAppAstro 'br/public:avm/res/app/container-app:0.19.0' = {
       {
         name: containerAppDomain
         bindingType: 'Auto'
+        certificateId: appEnvironment.outputs.appCertResourceId
       }
     ]
     containers: [
@@ -452,7 +483,7 @@ module containerAppAstro 'br/public:avm/res/app/container-app:0.19.0' = {
         }
       ]
     }
-    environmentResourceId: appsEnvironment.outputs.resourceId
+    environmentResourceId: appEnvironment.outputs.appEnvResourceId
   }
 }
 
@@ -474,6 +505,11 @@ module nsp 'br/public:avm/res/network/network-security-perimeter:0.1.3' = {
       }
       {
         privateLinkResource: foundry.outputs.foundryResourceId
+        profile: 'nsp-${namingPrefix}-infra-profile-${namingSuffix}'
+        accessMode: 'Enforced'
+      }
+      {
+        privateLinkResource: certKeyVault.outputs.certKeyVaultResourceId
         profile: 'nsp-${namingPrefix}-infra-profile-${namingSuffix}'
         accessMode: 'Enforced'
       }
