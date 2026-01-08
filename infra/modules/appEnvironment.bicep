@@ -33,7 +33,7 @@ resource appCert 'Microsoft.App/managedEnvironments/certificates@2025-10-02-prev
   location: location
   properties: {
     certificateKeyVaultProperties: {
-      identity:containerAppsIdentityResourceId
+      identity: containerAppsIdentityResourceId
       keyVaultUrl: keyVaultUrl
     }
   }
