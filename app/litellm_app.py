@@ -502,11 +502,6 @@ app.add_exception_handler(RateLimitExceeded, custom_rate_limit_handler)
 # Request/Response Models
 # =============================================================================
 
-class ClassificationResult(BaseModel):
-    """Structured output for question classification (Stage 1)."""
-    is_relevant: bool
-
-
 class QuestionRequest(BaseModel):
     """Request body for the /ask endpoint."""
     question: str
