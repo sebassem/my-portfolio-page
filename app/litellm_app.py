@@ -348,8 +348,6 @@ async def classify_question(question: str) -> bool:
     This is Stage 1 of the two-stage approach - uses minimal tokens (~150 input, ~10 output)
     to filter off-topic questions BEFORE expensive RAG retrieval.
     
-    Uses structured output with Pydantic model for reliable boolean parsing.
-    
     Args:
         question: User's sanitized question
         
@@ -371,20 +369,20 @@ async def classify_question(question: str) -> bool:
             api_base=AZURE_ENDPOINT,
             api_key=token,
             api_version="2024-05-01-preview",
-            response_format=ClassificationResult,  # Pydantic model for structured output
-            max_tokens=20,
+            max_tokens=10,
             temperature=0,  # Deterministic classification
             timeout=10,
         )
         
-        # Parse structured output using Pydantic model validation
-        content = response.choices[0].message.content
+        # Parse response - look for TRUE or FALSE in the response
+        content = response.choices[0].message.content.strip().upper()
         print(f"🏷️ Raw classification response: {content}")
         
-        result = ClassificationResult.model_validate_json(content)
+        # Check for false indicators first (more specific)
+        is_relevant = not ("FALSE" in content or "OFF_TOPIC" in content or "OFF-TOPIC" in content)
         
-        print(f"🏷️ Classification: '{question[:50]}...' -> is_relevant={result.is_relevant}")
-        return result.is_relevant
+        print(f"🏷️ Classification: '{question[:50]}...' -> is_relevant={is_relevant}")
+        return is_relevant
         
     except Exception as e:
         print(f"⚠️ Classification error: {e}. Defaulting to relevant (will use RAG).")

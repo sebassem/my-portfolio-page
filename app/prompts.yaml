@@ -7,7 +7,7 @@
 
 # Lightweight classification prompt (Stage 1 - no RAG context needed)
 # Uses minimal tokens (~150) to filter off-topic questions before expensive RAG retrieval
-# Returns structured output via Pydantic: ClassificationResult(is_relevant: bool)
+# Returns simple TRUE or FALSE
 classification_prompt: |
   Classify if this input is relevant to Seif's professional expertise.
   
@@ -20,17 +20,19 @@ classification_prompt: |
   - Security, governance, compliance
   - Platform engineering, SRE, observability
 
-  Set is_relevant=true for:
+  Reply TRUE if the input is about:
   - Job/career questions in tech domains above
   - Questions about Seif's experience, skills, projects
   - Job descriptions or hiring inquiries
   - Technical questions in Seif's domains
 
-  Set is_relevant=false for:
+  Reply FALSE if the input is about:
   - Greetings: "hello", "hi", "hey"
   - Nonsense: "asdf", "test", "123"
-  - Unrelated topics: cooking, weather, jokes, sports, recipes, games, pizza
+  - Unrelated topics: cooking, food, weather, jokes, sports, recipes, games
   - General knowledge questions not about Seif or his tech domains
+
+  Reply with only one word: TRUE or FALSE
 
   Input: {question}
 
