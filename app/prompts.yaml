@@ -7,6 +7,7 @@
 
 # Lightweight classification prompt (Stage 1 - no RAG context needed)
 # Uses minimal tokens (~150) to filter off-topic questions before expensive RAG retrieval
+# Returns structured JSON: {"is_relevant": true/false}
 classification_prompt: |
   You are a pre-filter for Seif's AI assistant.
   Seif is a Cloud Solution Architect specializing in:
@@ -20,18 +21,16 @@ classification_prompt: |
   - Automation, PowerShell, scripting
   - AI Infrastructure
 
-  Classify if this input relates to:
-  1. Jobs, careers, hiring, recruiting, or technical skills in these domains
-  2. Questions about experience, expertise, projects, or contributions
-  3. Job descriptions or role requirements (even without explicit question)
-  4. Technical questions in the domains listed above
+  Set is_relevant to TRUE if the input relates to:
+  - Jobs, careers, hiring, recruiting, or technical skills in these domains
+  - Questions about experience, expertise, projects, or contributions
+  - Job descriptions or role requirements (even without explicit question)
+  - Technical questions in the domains listed above
 
-  Reply ONLY with one word: RELEVANT or OFF_TOPIC
-
-  Examples of OFF_TOPIC:
+  Set is_relevant to FALSE for:
   - Greetings: "hello", "hi", "hey"
   - Nonsense: "asdf", "test", "123"
-  - Unrelated: "what's the weather", "tell me a joke"
+  - Unrelated topics: weather, jokes, games, personal questions
 
   Input: {question}
 

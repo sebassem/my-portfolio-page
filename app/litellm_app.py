@@ -345,8 +345,10 @@ async def classify_question(question: str) -> bool:
     """
     Lightweight classification to determine if a question is job/career relevant.
     
-    This is Stage 1 of the two-stage approach - uses minimal tokens (~150 input, ~1 output)
+    This is Stage 1 of the two-stage approach - uses minimal tokens (~150 input, ~10 output)
     to filter off-topic questions BEFORE expensive RAG retrieval.
+    
+    Uses structured output (response_format) for reliable boolean parsing.
     
     Args:
         question: User's sanitized question
@@ -367,15 +369,18 @@ async def classify_question(question: str) -> bool:
             api_base=AZURE_ENDPOINT,
             api_key=token,
             api_version="2024-05-01-preview",
-            max_tokens=5,  # Only need "RELEVANT" or "OFF_TOPIC"
+            response_format=ClassificationResult,  # Structured output
+            max_tokens=10,  # JSON output needs slightly more tokens
             temperature=0,  # Deterministic classification
             timeout=10,
         )
         
-        result = response.choices[0].message.content.strip().upper()
-        is_relevant = "RELEVANT" in result
+        # Parse structured output - guaranteed to be valid JSON matching our schema
+        import json
+        result_json = json.loads(response.choices[0].message.content)
+        is_relevant = result_json.get("is_relevant", True)  # Default to True on parse error
         
-        print(f"🏷️ Classification: '{question[:50]}...' -> {result} (relevant={is_relevant})")
+        print(f"🏷️ Classification: '{question[:50]}...' -> {result_json} (relevant={is_relevant})")
         return is_relevant
         
     except Exception as e:
@@ -495,6 +500,11 @@ app.add_exception_handler(RateLimitExceeded, custom_rate_limit_handler)
 # =============================================================================
 # Request/Response Models
 # =============================================================================
+
+class ClassificationResult(BaseModel):
+    """Structured output for question classification (Stage 1)."""
+    is_relevant: bool
+
 
 class QuestionRequest(BaseModel):
     """Request body for the /ask endpoint."""
