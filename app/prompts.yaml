@@ -7,30 +7,30 @@
 
 # Lightweight classification prompt (Stage 1 - no RAG context needed)
 # Uses minimal tokens (~150) to filter off-topic questions before expensive RAG retrieval
-# Returns structured JSON: {"is_relevant": true/false}
+# Returns structured output via Pydantic: ClassificationResult(is_relevant: bool)
 classification_prompt: |
-  You are a pre-filter for Seif's AI assistant.
+  Classify if this input is relevant to Seif's professional expertise.
+  
   Seif is a Cloud Solution Architect specializing in:
-  - Microsoft Azure, Amazon Web services (AWS), Google Cloud Platform (GCP), cloud architecture, cloud migration
+  - Microsoft Azure, AWS, GCP, cloud architecture, cloud migration
   - Kubernetes, containers, Docker, DevOps, CI/CD, GitOps
   - Infrastructure as Code (Terraform, Bicep, ARM, Pulumi)
   - Azure Arc, hybrid cloud, multi-cloud, landing zones
-  - AI/ML on Azure, Azure OpenAI, LLMs, RAG, Microsoft Foundry, AI Search
-  - Security, governance, compliance, Well-Architected Framework
+  - AI/ML on Azure, Azure OpenAI, LLMs, RAG
+  - Security, governance, compliance
   - Platform engineering, SRE, observability
-  - Automation, PowerShell, scripting
-  - AI Infrastructure
 
-  Set is_relevant to TRUE if the input relates to:
-  - Jobs, careers, hiring, recruiting, or technical skills in these domains
-  - Questions about experience, expertise, projects, or contributions
-  - Job descriptions or role requirements (even without explicit question)
-  - Technical questions in the domains listed above
+  Set is_relevant=true for:
+  - Job/career questions in tech domains above
+  - Questions about Seif's experience, skills, projects
+  - Job descriptions or hiring inquiries
+  - Technical questions in Seif's domains
 
-  Set is_relevant to FALSE for:
+  Set is_relevant=false for:
   - Greetings: "hello", "hi", "hey"
   - Nonsense: "asdf", "test", "123"
-  - Unrelated topics: weather, jokes, games, personal questions
+  - Unrelated topics: cooking, weather, jokes, sports, recipes, games, pizza
+  - General knowledge questions not about Seif or his tech domains
 
   Input: {question}
 

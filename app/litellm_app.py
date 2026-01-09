@@ -348,7 +348,7 @@ async def classify_question(question: str) -> bool:
     This is Stage 1 of the two-stage approach - uses minimal tokens (~150 input, ~10 output)
     to filter off-topic questions BEFORE expensive RAG retrieval.
     
-    Uses structured output (response_format) for reliable boolean parsing.
+    Uses structured output with Pydantic model for reliable boolean parsing.
     
     Args:
         question: User's sanitized question
@@ -365,23 +365,26 @@ async def classify_question(question: str) -> bool:
         
         response = await litellm.acompletion(
             model=f"azure/{DEPLOYMENT_NAME}",
-            messages=[{"role": "user", "content": classification_message}],
+            messages=[
+                {"role": "user", "content": classification_message}
+            ],
             api_base=AZURE_ENDPOINT,
             api_key=token,
             api_version="2024-05-01-preview",
-            response_format=ClassificationResult,  # Structured output
-            max_tokens=10,  # JSON output needs slightly more tokens
+            response_format=ClassificationResult,  # Pydantic model for structured output
+            max_tokens=20,
             temperature=0,  # Deterministic classification
             timeout=10,
         )
         
-        # Parse structured output - guaranteed to be valid JSON matching our schema
-        import json
-        result_json = json.loads(response.choices[0].message.content)
-        is_relevant = result_json.get("is_relevant", True)  # Default to True on parse error
+        # Parse structured output using Pydantic model validation
+        content = response.choices[0].message.content
+        print(f"🏷️ Raw classification response: {content}")
         
-        print(f"🏷️ Classification: '{question[:50]}...' -> {result_json} (relevant={is_relevant})")
-        return is_relevant
+        result = ClassificationResult.model_validate_json(content)
+        
+        print(f"🏷️ Classification: '{question[:50]}...' -> is_relevant={result.is_relevant}")
+        return result.is_relevant
         
     except Exception as e:
         print(f"⚠️ Classification error: {e}. Defaulting to relevant (will use RAG).")
