@@ -9,9 +9,9 @@ param deployments = [
   {
     name: 'llm-deployment'
     model: {
-      format: 'OpenAI'
-      name: 'gpt-4.1-mini'
-      version: '2025-04-14'
+      format: 'DeepSeek'
+      name: 'DeepSeek-V3.2'
+      version: '1'
     }
     sku: {
       capacity: 150

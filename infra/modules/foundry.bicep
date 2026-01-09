@@ -26,6 +26,18 @@ param deployments array = [
     }
   }
   {
+    name: 'llm-deployment-backup'
+    model: {
+      format: 'OpenAI'
+      name: 'gpt-4.1-mini'
+      version: '2025-04-14'
+    }
+    sku: {
+      capacity: 150
+      name: 'GlobalStandard'
+    }
+  }
+  {
     name: 'embedding-deployment'
     model: {
       format: 'OpenAI'
