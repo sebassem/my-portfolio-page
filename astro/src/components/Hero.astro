@@ -1,4 +1,5 @@
 ---
+import { Image } from "astro:assets";
 import Button from "./Button.astro";
 import Bars from "./Bars.astro";
 
@@ -8,6 +9,8 @@ import svgArrow from "../assets/arrow.svg";
 
 import svgPinkStar from "../assets/pink-star.svg";
 import svgString from "../assets/string.svg";
+
+import avatarImage from "../assets/avatar.avif";
 
 import { author, buy } from "../sample";
 ---
@@ -97,7 +100,17 @@ import { author, buy } from "../sample";
             class="absolute -top-6 -right-2 z-10"
           />
 
-          <div id="me" class="w-full h-[310px] border-2"></div>
+          <div id="me" class="w-full h-[310px] border-2 overflow-hidden">
+            <Image
+              src={avatarImage}
+              alt="Portrait of Seif Bassem"
+              width={400}
+              height={310}
+              format="webp"
+              quality={80}
+              class="w-full h-full object-cover object-top"
+            />
+          </div>
           <Bars />
         </div>
       </div>
@@ -106,9 +119,5 @@ import { author, buy } from "../sample";
 </section>
 
 <style>
-  #me {
-    background-image: url("../assets/avatar.jpg");
-    background-position: top;
-    background-size: cover;
-  }
+  /* Avatar styling now handled by Image component */
 </style>
