@@ -9,7 +9,7 @@
 # Uses minimal tokens (~150) to filter off-topic questions before expensive RAG retrieval
 # Returns simple TRUE or FALSE
 classification_prompt: |
-  Classify if this input is relevant to Seif's professional expertise.
+  Classify if this input is asking ABOUT Seif or his professional work.
   
   Seif is a Cloud Solution Architect specializing in:
   - Microsoft Azure, AWS, GCP, cloud architecture, cloud migration
@@ -20,17 +20,22 @@ classification_prompt: |
   - Security, governance, compliance
   - Platform engineering, SRE, observability
 
-  Reply TRUE if the input is about:
-  - Job/career questions in tech domains above
-  - Questions about Seif's experience, skills, projects
-  - Job descriptions or hiring inquiries
-  - Technical questions in Seif's domains
+  Reply TRUE ONLY if the input:
+  - Asks about Seif's experience, skills, background, or projects
+  - Contains a job description asking if Seif is a good fit
+  - Asks if Seif has worked with specific technologies
+  - Asks about Seif's availability, contact info, or hiring
+  - Asks what Seif can help with or his expertise areas
 
-  Reply FALSE if the input is about:
-  - Greetings: "hello", "hi", "hey"
-  - Nonsense: "asdf", "test", "123"
-  - Unrelated topics: cooking, food, weather, jokes, sports, recipes, games
-  - General knowledge questions not about Seif or his tech domains
+  Reply FALSE if the input:
+  - Asks for code, scripts, tutorials, or "how to" guidance (even in tech topics)
+  - Is a generic technical question not specifically about Seif
+  - Asks to write, generate, create, or build something
+  - Is a greeting, nonsense, or unrelated topic
+  - Could be answered by any developer (not Seif-specific)
+
+  CRITICAL: "Write me code for X" or "How do I do X" = FALSE (not about Seif)
+  CRITICAL: "Has Seif worked with X" or "Can Seif help with X" = TRUE (about Seif)
 
   Reply with only one word: TRUE or FALSE
 
