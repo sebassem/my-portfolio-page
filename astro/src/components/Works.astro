@@ -35,19 +35,36 @@ const renderedPortfolio = await Promise.all(
     />
   </div>
 
-  <!-- Tabs -->
-  <div class="flex justify-center gap-2 flex-wrap">
-    {
-      tabs.map((tab, index) => (
-        <button
-          data-tab={tab}
-          class={`tab-btn px-6 py-2 rounded-full border-2 border-black font-medium capitalize transition-all duration-200 hover:bg-black hover:text-white ${index === 0 ? "bg-black text-white" : "bg-white text-black"}`}
-        >
-          {tab}
-        </button>
-      ))
-    }
+  <!-- Tabs and Presentation Toggle -->
+  <div class="flex flex-col items-center gap-4">
+    <div class="flex justify-center gap-2 flex-wrap">
+      {
+        tabs.map((tab, index) => (
+          <button
+            data-tab={tab}
+            class={`tab-btn px-6 py-2 rounded-full border-2 border-black font-medium capitalize transition-all duration-200 hover:bg-black hover:text-white ${index === 0 ? "bg-black text-white" : "bg-white text-black"}`}
+          >
+            {tab}
+          </button>
+        ))
+      }
+    </div>
+    
+    <!-- Presentation Mode Toggle -->
+    <button id="presentation-toggle" class="group flex items-center gap-3 px-4 py-2 rounded-full border-2 border-black bg-white hover:bg-gray-50 transition-all" title="Present portfolio items as a slideshow">
+      <span class="text-sm font-medium">Slides view</span>
+      <div class="relative w-11 h-6 bg-gray-200 rounded-full border border-gray-300 transition-colors group-[.active]:bg-[var(--yellow)]">
+        <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full border border-gray-300 shadow-sm transition-transform group-[.active]:translate-x-5 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400 group-[.active]:text-black">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+        </div>
+      </div>
+    </button>
   </div>
+  
   <div
     class="max-w-6xl mx-auto flex flex-wrap justify-center gap-6"
     id="portfolio-grid"

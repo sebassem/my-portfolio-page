@@ -1,0 +1,302 @@
+---
+// Presentation Mode Component
+// Provides a toggle and fullscreen slideshow for portfolio items
+---
+
+<!-- Presentation Overlay (fullscreen portfolio slideshow) -->
+<div id="presentation-overlay" class="fixed inset-0 z-[100] hidden bg-[var(--main-bg)]">
+  <!-- Header with close button -->
+  <div class="absolute top-0 left-0 right-0 flex items-center justify-between p-4 bg-gradient-to-b from-black/20 to-transparent z-10">
+    <div class="flex items-center gap-3">
+      <span class="text-sm font-medium bg-black text-white px-3 py-1 rounded-full">
+        <span id="pres-current">1</span> / <span id="pres-total">1</span>
+      </span>
+      <span id="pres-category" class="text-sm font-medium bg-[var(--yellow)] text-black px-3 py-1 rounded-full capitalize"></span>
+    </div>
+    <button id="pres-close" class="w-10 h-10 flex items-center justify-center bg-black text-white rounded-full hover:bg-gray-800 transition-colors" title="Exit (Esc)">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Main content area -->
+  <div class="h-full flex flex-col items-center px-4 py-16 overflow-y-auto">
+    <!-- Portfolio item display - text-focused layout -->
+    <div id="pres-item" class="max-w-5xl w-full h-[calc(100vh-10rem)] bg-white border-4 border-black rounded-xl shadow-[8px_8px_0px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col">
+      <!-- Hidden image (keeps data for reference but not displayed) -->
+      <img id="pres-image" src="" alt="" class="hidden" />
+      <!-- Main content area - takes all space -->
+      <div class="p-6 md:p-10 flex flex-col flex-1 min-h-0">
+        <div class="flex items-start justify-between gap-4 mb-6 shrink-0">
+          <h2 id="pres-title" class="text-3xl md:text-4xl font-bold"></h2>
+          <a id="pres-link" href="#" target="_blank" rel="noopener noreferrer" 
+             class="shrink-0 inline-flex items-center gap-2 px-4 py-2 bg-black text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors">
+            View
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="7" y1="17" x2="17" y2="7"></line>
+              <polyline points="7 7 17 7 17 17"></polyline>
+            </svg>
+          </a>
+        </div>
+        <div id="pres-content" class="prose prose-sm prose-gray max-w-none flex-1 overflow-y-auto [&_img]:max-h-64 [&_img]:w-auto [&_img]:object-contain [&_img]:mx-auto">
+          <!-- Content will be injected here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation controls -->
+  <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4">
+    <button id="pres-prev" class="w-12 h-12 flex items-center justify-center bg-black text-white rounded-full hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed" title="Previous (←)">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"></polyline>
+      </svg>
+    </button>
+    
+    <!-- Progress dots -->
+    <div id="pres-dots" class="flex items-center gap-2 px-4">
+      <!-- Dots will be generated dynamically -->
+    </div>
+    
+    <button id="pres-next" class="w-12 h-12 flex items-center justify-center bg-black text-white rounded-full hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed" title="Next (→)">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"></polyline>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Keyboard hints -->
+  <div class="absolute bottom-6 right-6 text-sm text-gray-500 hidden md:block">
+    <kbd class="px-2 py-1 bg-white border border-gray-300 rounded text-xs">←</kbd>
+    <kbd class="px-2 py-1 bg-white border border-gray-300 rounded text-xs">→</kbd>
+    to navigate
+    <span class="mx-2">•</span>
+    <kbd class="px-2 py-1 bg-white border border-gray-300 rounded text-xs">Esc</kbd>
+    to exit
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Elements
+  const overlay = document.getElementById('presentation-overlay');
+  const toggleBtn = document.getElementById('presentation-toggle');
+  const closeBtn = document.getElementById('pres-close');
+  const prevBtn = document.getElementById('pres-prev') as HTMLButtonElement;
+  const nextBtn = document.getElementById('pres-next') as HTMLButtonElement;
+  const dotsContainer = document.getElementById('pres-dots');
+  
+  // Display elements
+  const presImage = document.getElementById('pres-image') as HTMLImageElement;
+  const presTitle = document.getElementById('pres-title');
+  const presContent = document.getElementById('pres-content');
+  const presLink = document.getElementById('pres-link') as HTMLAnchorElement;
+  const presCategory = document.getElementById('pres-category');
+  const presCurrent = document.getElementById('pres-current');
+  const presTotal = document.getElementById('pres-total');
+  
+  // State
+  let isPresenting = false;
+  let currentIndex = 0;
+  let portfolioItems: HTMLElement[] = [];
+  
+  // Get ALL portfolio items matching current filter (ignoring pagination)
+  function getFilteredPortfolioItems(): HTMLElement[] {
+    const items = document.querySelectorAll('.portfolio-item');
+    const activeTab = document.querySelector('.tab-btn.bg-black');
+    const activeCategory = activeTab?.getAttribute('data-tab') || 'all';
+    
+    return Array.from(items).filter(item => {
+      const el = item as HTMLElement;
+      // If "all" tab is active, include all items
+      if (activeCategory === 'all') return true;
+      
+      // Otherwise filter by category
+      const categories = JSON.parse(el.dataset.category || '[]');
+      return categories.includes(activeCategory);
+    }) as HTMLElement[];
+  }
+  
+  // Generate progress dots
+  function generateDots() {
+    if (!dotsContainer) return;
+    dotsContainer.innerHTML = '';
+    
+    const maxDots = 10;
+    const totalItems = portfolioItems.length;
+    
+    if (totalItems <= maxDots) {
+      portfolioItems.forEach((_, i) => {
+        const dot = document.createElement('button');
+        dot.className = `w-3 h-3 rounded-full transition-all ${i === currentIndex ? 'bg-black scale-125' : 'bg-gray-300 hover:bg-gray-400'}`;
+        dot.addEventListener('click', () => goToSlide(i));
+        dotsContainer.appendChild(dot);
+      });
+    } else {
+      // Show condensed dots for many items
+      const progressText = document.createElement('span');
+      progressText.className = 'text-sm font-medium text-gray-600';
+      progressText.textContent = `${currentIndex + 1} of ${totalItems}`;
+      dotsContainer.appendChild(progressText);
+    }
+  }
+  
+  // Update the display with current portfolio item
+  function updateDisplay() {
+    if (!portfolioItems.length) return;
+    
+    const item = portfolioItems[currentIndex];
+    const name = item.dataset.name || '';
+    const cover = item.dataset.cover || '';
+    const link = item.dataset.link || '#';
+    const slug = item.dataset.slug || '';
+    const categories = JSON.parse(item.dataset.category || '[]');
+    
+    // Update image
+    if (presImage) {
+      presImage.src = cover;
+      presImage.alt = name;
+    }
+    
+    // Update title
+    if (presTitle) {
+      presTitle.textContent = name;
+    }
+    
+    // Update category
+    if (presCategory) {
+      presCategory.textContent = categories.join(', ');
+    }
+    
+    // Update link
+    if (presLink) {
+      presLink.href = link;
+    }
+    
+    // Update content from hidden markdown container
+    if (presContent) {
+      const contentEl = document.getElementById(`content-${slug}`);
+      if (contentEl) {
+        presContent.innerHTML = contentEl.innerHTML;
+      } else {
+        presContent.innerHTML = '<p class="text-gray-500">No additional details available.</p>';
+      }
+      // Scroll content to top when switching slides
+      presContent.scrollTop = 0;
+    }
+    
+    // Update counter
+    if (presCurrent) presCurrent.textContent = String(currentIndex + 1);
+    if (presTotal) presTotal.textContent = String(portfolioItems.length);
+    
+    // Update navigation buttons
+    if (prevBtn) prevBtn.disabled = currentIndex === 0;
+    if (nextBtn) nextBtn.disabled = currentIndex === portfolioItems.length - 1;
+    
+    // Update dots
+    generateDots();
+  }
+  
+  // Navigate to specific slide
+  function goToSlide(index: number) {
+    if (index < 0 || index >= portfolioItems.length) return;
+    currentIndex = index;
+    updateDisplay();
+  }
+  
+  // Enter presentation mode
+  function enterPresentation() {
+    portfolioItems = getFilteredPortfolioItems();
+    
+    if (portfolioItems.length === 0) {
+      alert('No portfolio items to present!');
+      return;
+    }
+    
+    isPresenting = true;
+    currentIndex = 0;
+    
+    // Update toggle state
+    if (toggleBtn) {
+      toggleBtn.classList.add('active');
+    }
+    
+    // Show overlay
+    if (overlay) {
+      overlay.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+    
+    updateDisplay();
+  }
+  
+  // Exit presentation mode
+  function exitPresentation() {
+    isPresenting = false;
+    
+    // Update toggle state
+    if (toggleBtn) {
+      toggleBtn.classList.remove('active');
+    }
+    
+    // Hide overlay
+    if (overlay) {
+      overlay.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+  }
+  
+  // Event listeners
+  toggleBtn?.addEventListener('click', () => {
+    if (isPresenting) {
+      exitPresentation();
+    } else {
+      enterPresentation();
+    }
+  });
+  
+  closeBtn?.addEventListener('click', exitPresentation);
+  prevBtn?.addEventListener('click', () => goToSlide(currentIndex - 1));
+  nextBtn?.addEventListener('click', () => goToSlide(currentIndex + 1));
+  
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (!isPresenting) return;
+    
+    switch(e.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+      case ' ':
+        e.preventDefault();
+        goToSlide(currentIndex + 1);
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        e.preventDefault();
+        goToSlide(currentIndex - 1);
+        break;
+      case 'Home':
+        e.preventDefault();
+        goToSlide(0);
+        break;
+      case 'End':
+        e.preventDefault();
+        goToSlide(portfolioItems.length - 1);
+        break;
+      case 'Escape':
+        e.preventDefault();
+        exitPresentation();
+        break;
+    }
+  });
+  
+  // Close on backdrop click
+  overlay?.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      exitPresentation();
+    }
+  });
+});
+</script>
