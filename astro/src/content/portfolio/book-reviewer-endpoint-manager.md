@@ -3,7 +3,7 @@ name: "Technical Reviewer - Mastering Microsoft Endpoint Manager"
 category: ["Contributions"]
 cover: "https://images.seifbassem.com/images/portfolio/book-review/banner.jpg"
 link: "https://www.packtpub.com/en-us/product/mastering-microsoft-endpoint-manager-9781801072175?srsltid=AfmBOopRKKGXb7fiNQ8P-1_l7zB_mmP1XbTC7-9MEqecW6RvhJB7UtSl"
-order: 19
+order: 40
 ---
 
 ## Project Overview

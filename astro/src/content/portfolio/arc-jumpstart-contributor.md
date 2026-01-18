@@ -63,7 +63,7 @@ Architected this manufacturing industry reference implementation including:
 ### Jumpstart Copilot
 
 - **Product Vision** - Conceptualized and led the product vision for this new AI-powered assistant
-- **PRD Authorship** - Authored the comprehensive Product Requirement Document
+- **Authoring the PRD** - Authored the comprehensive Product Requirement Document
 - **Cross-functional collaboration** - Orchestrated alignment with engineering, legal, and design teams
 
 

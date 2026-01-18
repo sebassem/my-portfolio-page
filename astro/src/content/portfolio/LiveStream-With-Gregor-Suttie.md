@@ -3,7 +3,7 @@ name: "Azure Greg chats with Seif Bassem about Azure Arc JumpStart"
 category: ["Public speaking"]
 cover: "https://i3.ytimg.com/vi/Qn1N26XGULc/maxresdefault.jpg"
 link: "https://www.youtube.com/watch?v=km7TYC2hEYg&source_ve_path=Qn1N26XGULc"
-order: 38
+order: 19
 featured: true
 ---
 

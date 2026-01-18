@@ -3,7 +3,7 @@ name: "Azure Arc-enabled Kubernetes Enterprise Scale landing zone accelerator"
 category: ["Architecture"]
 cover: "https://images.seifbassem.com/images/portfolio/lza-accelerators/lza-kubernetes.png"
 link: "https://learn.microsoft.com/azure/cloud-adoption-framework/scenarios/hybrid/enterprise-scale-landing-zone"
-order: 15
+order: 8
 featured: true
 ---
 
