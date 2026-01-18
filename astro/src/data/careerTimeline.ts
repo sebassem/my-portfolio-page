@@ -2,6 +2,7 @@ export interface TimelineItem {
   year: string;
   title: string;
   company: string;
+  logo?: string;
   description: string;
   highlights?: string[];
 }
@@ -11,6 +12,7 @@ export const careerTimeline: TimelineItem[] = [
     year: "2023 - Present",
     title: "Cloud Solution Architect - Tech strategy",
     company: "Microsoft",
+    logo: "/companies/microsoft.png",
     description: "Leading cloud architecture, transformation and optimization initiatives for enterprise customers and building top-notch tools and solutions for better cloud adoption.",
     highlights: [
       "Cloud and AI solutions architecture",
@@ -26,7 +28,8 @@ export const careerTimeline: TimelineItem[] = [
   {
     year: "2020 - 2023",
     title: "Sr. Cloud Solution Architect Engineering - Tech Strategy Team",
-    company: " Microsoft",
+    company: "Microsoft",
+    logo: "/companies/microsoft.png",
     description: "Leading content and tool development for cloud adoption, governance and hybrid cloud",
     highlights: [
       "Led the authoring of the Cloud adoption framework landing zone accelerator for Azure Arc Data Services",
@@ -41,6 +44,7 @@ export const careerTimeline: TimelineItem[] = [
     year: "2021 - 2022",
     title: "Sr. Customer Engineer, Apps & Infra, Global Technical Team",
     company: "Microsoft",
+    logo: "/companies/microsoft.png",
     description: "Leading content development for the Well-architected and Cloud adoption frameworks",
     highlights: [
       "Reduced the time and cost of the Azure Well-Architected assessments deliveries by ~40% by building the cost optimization workbook",
@@ -52,6 +56,7 @@ export const careerTimeline: TimelineItem[] = [
     year: "2018 - 2021",
     title: "Subject Matter Expert - FastTrack center for M365",
     company: "Microsoft",
+    logo: "/companies/microsoft.png",
     description: "Lead for Windows and Microsoft 365 deployment and design engagements for enterprise customers in EMEA",
     highlights: [
       "Engaged with customers across EMEA region to act as a trusted advisor to customers , helping them modernize their management of Windows 10 , Office 365 and Edge using Microsoft Endpoint Manager",
@@ -63,6 +68,7 @@ export const careerTimeline: TimelineItem[] = [
     year: "2013 - 2018",
     title: "Domain Infrastructure & Messaging System Team Leader",
     company: "QNB Group",
+    logo: "/companies/qnb.png",
     description: "Lead for Microsoft solutions",
     highlights: [
       "Led the PCI DSS certification journey by securing and hardening our Windows environment (Desktops and servers)",
@@ -76,6 +82,7 @@ export const careerTimeline: TimelineItem[] = [
     year: "2013 - 2018",
     title: "Senior System Administrator",
     company: "Société Générale",
+    logo: "/companies/societe-generale.png",
     description: "System administrator for Microsoft solutions",
     highlights: [
       "Reduced number of help desk requests by developing a bot-like application which empowers the end users to troubleshoot and solve their the most common problems they face day-to-day",
