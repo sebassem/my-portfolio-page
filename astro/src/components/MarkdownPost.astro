@@ -34,7 +34,9 @@ const { frontmatter } = Astro.props;
                     <a href="#" class={styleSheet.actions}><i class="ri-share-forward-box-line text-xl"></i> </a>
                 </div>
             </div>
-        <slot />
+            <div class="prose prose-gray max-w-none">
+                <slot />
+            </div>
     </div>
 </section>
 

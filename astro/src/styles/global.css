@@ -6,4 +6,25 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* Responsive images in markdown/prose content */
+.prose img {
+  max-height: 40vh;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 0.5rem;
+}
 
+@media (min-width: 768px) {
+  .prose img {
+    max-height: 50vh;
+  }
+}
+
+@media (min-width: 1024px) {
+  .prose img {
+    max-height: 60vh;
+  }
+}
