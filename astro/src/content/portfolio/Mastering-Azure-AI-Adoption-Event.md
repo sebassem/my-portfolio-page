@@ -1,9 +1,9 @@
 ---
 name: "Mastering Azure AI Adoption event"
-category: ["Public speaking"]
+category: ["Public speaking","AI"]
 cover: "https://images.seifbassem.com/images/Contributions/Master-Azure-AI-Adoption/Seif-Bassem_16x9.png"
 link: "https://www.youtube.com/watch?v=km7TYC2hEYg&source_ve_path=soWJJ3BySwc"
-order: 8
+order: 10
 featured: true
 ---
 
