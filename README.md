@@ -11,11 +11,13 @@ A personal portfolio website with an AI assistant that answers questions about S
 
 This project consists of three main components:
 
+![Screenshot showing the diagram](https://images.seifbassem.com/images/Posts/AI-portfolio-website/diagram.png)
+
 ### Frontend (`/astro`)
 - **Framework**: [Astro](https://astro.build/) with server-side rendering
 - **Styling**: Tailwind CSS v4
 - **Animations**: GSAP + Lottie
-- **Features**: 
+- **Features**:
   - Portfolio showcase with project timeline
   - Blog integration
   - Real-time AI chat with streaming responses (SSE)
