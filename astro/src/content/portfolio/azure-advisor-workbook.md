@@ -27,7 +27,7 @@ Co-authored the Azure Advisor cost optimization workbook in collaboration with t
 | Metric | Value |
 |--------|-------|
 | Monthly Users | ~1,800 |
-| Cost Categories | 5+ |
+| Cost Categories | Storage, compute, networking, data, containers, and more |
 
 ### Technologies
 
