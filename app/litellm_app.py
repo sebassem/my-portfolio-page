@@ -176,10 +176,13 @@ litellm.enable_cache()
 
 def get_client_ip(request: Request) -> str:
     """
-    Extract the real client IP address, handling reverse proxy headers.
+    Extract the real client IP address from trusted proxy headers.
     
-    Container Apps and other proxies add X-Forwarded-For header with the
-    original client IP as the first value in the comma-separated list.
+    Priority order (most trusted first):
+    1. CF-Connecting-IP: Set by Cloudflare, cannot be spoofed by clients
+    2. X-Real-IP: Set by trusted reverse proxies (nginx, etc.)
+    3. X-Forwarded-For: Can be spoofed, used as last resort
+    4. Direct connection IP: Fallback when no proxy headers present
     
     Args:
         request: FastAPI request object
@@ -187,10 +190,23 @@ def get_client_ip(request: Request) -> str:
     Returns:
         Client IP address string
     """
+    # Cloudflare's verified client IP (most trusted - Cloudflare overwrites this)
+    cf_connecting_ip = request.headers.get("cf-connecting-ip")
+    if cf_connecting_ip:
+        return cf_connecting_ip.strip()
+    
+    # X-Real-IP from trusted reverse proxy
+    real_ip = request.headers.get("x-real-ip")
+    if real_ip:
+        return real_ip.strip()
+    
+    # X-Forwarded-For as fallback (take rightmost non-private IP if possible)
     forwarded = request.headers.get("x-forwarded-for")
     if forwarded:
-        # First IP in the list is the original client
+        # First IP in the list is the original client (added by first proxy)
+        # Note: In production with Cloudflare, CF-Connecting-IP should be used instead
         return forwarded.split(",")[0].strip()
+    
     return get_remote_address(request)
 
 
@@ -305,16 +321,9 @@ def retrieve_context(query: str, top_k: int = SEARCH_TOP_K) -> str:
         
         # Convert to list to actually execute the search
         results_list = list(results)
-        print(f"🔍 Search returned {len(results_list)} results")
-        
-        # Debug: Print first result structure
-        if results_list:
-            first_result = results_list[0]
-            print(f"🔍 First result keys: {first_result.keys() if hasattr(first_result, 'keys') else dir(first_result)}")
-            print(f"🔍 First result: {first_result}")
-        
         chunks = [doc["chunk"] for doc in results_list if "chunk" in doc]
-        print(f"🔍 Extracted {len(chunks)} chunks")
+        total_chars = sum(len(c) for c in chunks)
+        print(f"🔍 Search: {len(results_list)} results, {len(chunks)} chunks, {total_chars} chars")
         return "\n\n".join(chunks)
     except Exception as e:
         print(f"❌ Search error: {type(e).__name__}: {e}")
@@ -418,11 +427,8 @@ async def stream_ai_response(question: str) -> AsyncGenerator[str, None]:
     # Retrieve relevant context from portfolio documents
     context = retrieve_context(question)
     
-    # Debug: Log context retrieval
-    if context:
-        print(f"📚 Context retrieved ({len(context)} chars). First 300 chars: {context[:300]}...")
-    else:
-        print("⚠️ WARNING: No context retrieved from RAG!")
+    if not context:
+        print("⚠️ WARNING: No context retrieved from RAG")
 
     # Build the conversation messages
     system_prompt = ASSISTANT_PROMPT.format(context=context)

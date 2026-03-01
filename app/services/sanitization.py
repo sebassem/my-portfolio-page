@@ -14,16 +14,52 @@ from typing import List, Tuple
 
 # Regex patterns that may indicate prompt injection attempts
 SUSPICIOUS_PATTERNS: List[str] = [
+    # Classic prompt injection
     r"ignore\s+(previous|above|all)\s+instructions?",
     r"disregard\s+(previous|above|all)",
     r"forget\s+(everything|previous|above)",
     r"you\s+are\s+now",
     r"new\s+instructions?",
+    r"override\s+(previous|system|all)",
+    
+    # Role/persona hijacking
     r"system\s*:\s*",
+    r"assistant\s*:\s*",
+    r"user\s*:\s*",
+    r"\[INST\]",
+    r"\[/INST\]",
+    r"###\s*(System|Assistant|User)",
+    r"<\|im_start\|>",
+    r"<\|im_end\|>",
+    
+    # Delimiter injection
+    r"-{3,}",       # Markdown horizontal rules
+    r'"{3,}',       # Triple quotes
+    r"'{3,}",       # Triple single quotes
+    r"```",         # Code blocks used as delimiters
+    
+    # Script/code injection
     r"<\s*script",
     r"javascript\s*:",
-    r"\{\{.*\}\}",  # Template injection
-    r"\$\{.*\}",    # Variable injection
+    r"data\s*:\s*[^,]*;?\s*base64",  # Data URI with base64
+    
+    # Markdown injection
+    r"\[.*\]\s*\(\s*javascript\s*:",
+    r"\[.*\]\s*\(\s*data\s*:",
+    r"!\[.*\]\s*\(\s*data\s*:",
+    
+    # Template injection
+    r"\{\{.*\}\}",
+    r"\$\{.*\}",
+    r"\{%.*%\}",    # Jinja-style
+    
+    # Jailbreak keywords
+    r"\bDAN\b",
+    r"\bjailbreak\b",
+    r"bypass\s+(safety|filter|restriction)",
+    r"pretend\s+you\s+(are|can|have)",
+    r"act\s+as\s+(if|a|an)",
+    r"roleplay\s+as",
 ]
 
 # Pre-compile patterns for better performance
