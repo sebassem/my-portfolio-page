@@ -113,6 +113,7 @@ import svgHl from "../assets/hl.svg";
 <script>
   import { askAI, warmupBackend } from "../services/aiService";
   import { marked } from "marked";
+  import DOMPurify from "dompurify";
 
   const askAiBtn = document.getElementById("ask-ai-btn");
   const aiQuestion = document.getElementById(
@@ -129,11 +130,20 @@ import svgHl from "../assets/hl.svg";
     gfm: true,
   });
 
+  /**
+   * Safely render markdown to HTML with XSS protection.
+   * DOMPurify strips dangerous tags (script, event handlers, etc.)
+   */
+  function safeMarkdown(text: string): string {
+    const rawHtml = marked.parse(text) as string;
+    return DOMPurify.sanitize(rawHtml);
+  }
+
   // Modal functions
   function openModal(text: string) {
     if (aiResponseText) {
-      // Parse markdown and render as HTML
-      aiResponseText.innerHTML = marked.parse(text) as string;
+      // Parse markdown and sanitize to prevent XSS
+      aiResponseText.innerHTML = safeMarkdown(text);
     }
     aiModal?.classList.remove("hidden");
     document.body.style.overflow = "hidden";
@@ -142,7 +152,7 @@ import svgHl from "../assets/hl.svg";
   // Update modal content with streaming text
   function updateModal(text: string) {
     if (aiResponseText) {
-      aiResponseText.innerHTML = marked.parse(text) as string;
+      aiResponseText.innerHTML = safeMarkdown(text);
     }
   }
 
