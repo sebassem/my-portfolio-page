@@ -10,6 +10,8 @@ order: 15
 
 Built the Azure Governance Visualizer accelerator, simplifying deployment and automating upgrades to help customers gain better visibility into their Azure governance posture.
 
+![Screenshot showing the AzGoVvIZ Accelerator](https://learn.microsoft.com/azure/architecture/landing-zones/images/azure-governance-visualizer-accelerator-architecture.svg)
+
 ### Key Features
 
 - **Simplified Deployment** - One-click deployment experience
