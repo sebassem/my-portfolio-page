@@ -8,8 +8,6 @@ param namingPrefix string = 'sbm'
 
 param resourceGroupName string = 'rg-${namingPrefix}-infra-${namingSuffix}'
 
-param acrName string = 'acrportfolio${namingPrefix}infra${namingSuffix}'
-
 param containerAppsIdentityName string = 'uai-${namingPrefix}-apps-infra-${namingSuffix}'
 
 param storageAccountName string = 'stg${namingPrefix}infra${namingSuffix}'
@@ -36,6 +34,7 @@ param certKeyVaultName string = 'kvastrocert001'
 
 param certName string = 'cloudflare'
 
+param dockerHubUsername string = 'seifbassem'
 
 param deployments array = [
   {
@@ -106,26 +105,6 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.31.0' = {
         principalId: containerAppsIdentity.outputs.principalId
         roleDefinitionIdOrName: '/providers/Microsoft.Authorization/roleDefinitions/0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3'
         description: 'Storage Table Data Contributor'
-      }
-    ]
-  }
-}
-
-module acr 'br/public:avm/res/container-registry/registry:0.9.3' = {
-  scope: rg
-  params: {
-    name: acrName
-    location: location
-    acrSku: 'Basic'
-    acrAdminUserEnabled: false
-    anonymousPullEnabled: false
-    networkRuleBypassOptions: 'None'
-    zoneRedundancy: 'Disabled'
-    roleAssignments: [
-      {
-        principalId: containerAppsIdentity.outputs.principalId
-        roleDefinitionIdOrName: '/providers/Microsoft.Authorization/roleDefinitions/7f951dda-4ed3-4680-a7ca-43fe172d538d'
-        description: 'AcrPull'
       }
     ]
   }
@@ -265,15 +244,16 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
     }
     registries: [
       {
-        server: acr.outputs.loginServer
-        identity: containerAppsIdentity.outputs.resourceId
+        server: 'docker.io'
+        username: dockerHubUsername
+        passwordSecretRef: 'dockerhubtoken'
       }
     ]
     ingressExternal: false
     ingressTargetPort: 8000
     containers: [
       {
-        image: '${acr.outputs.loginServer}/portfolio-api:latest'
+        image: 'docker.io/seifbassem/portfolio-app:api-latest'
         name: 'portfolio-api'
         imageType: 'ContainerImage'
         resources: {
@@ -390,6 +370,11 @@ module containerApp 'br/public:avm/res/app/container-app:0.19.0' = {
         keyVaultUrl: '${keyVault.outputs.uri}secrets/ragindexname'
         name: 'ragindexname'
       }
+      {
+        identity: containerAppsIdentity.outputs.resourceId
+        keyVaultUrl: '${keyVault.outputs.uri}secrets/dockerhubtoken'
+        name: 'dockerhubtoken'
+      }
     ]
   }
 }
@@ -406,8 +391,9 @@ module containerAppAstro 'br/public:avm/res/app/container-app:0.19.0' = {
     }
     registries: [
       {
-        server: acr.outputs.loginServer
-        identity: containerAppsIdentity.outputs.resourceId
+        server: 'docker.io'
+        username: dockerHubUsername
+        passwordSecretRef: 'dockerhubtoken'
       }
     ]
     ingressExternal: true
@@ -422,7 +408,7 @@ module containerAppAstro 'br/public:avm/res/app/container-app:0.19.0' = {
     ]
     containers: [
       {
-        image: '${acr.outputs.loginServer}/portfolio-astro:latest'
+        image: 'docker.io/seifbassem/portfolio-app:astro-latest'
         name: 'portfolio-astro'
         imageType: 'ContainerImage'
         resources: {
@@ -484,6 +470,18 @@ module containerAppAstro 'br/public:avm/res/app/container-app:0.19.0' = {
       ]
     }
     environmentResourceId: appEnvironment.outputs.appEnvResourceId
+    identitySettings: [
+      {
+        identity: containerAppsIdentity.outputs.resourceId
+      }
+    ]
+    secrets: [
+      {
+        identity: containerAppsIdentity.outputs.resourceId
+        keyVaultUrl: '${keyVault.outputs.uri}secrets/dockerhubtoken'
+        name: 'dockerhubtoken'
+      }
+    ]
   }
 }
 
@@ -541,7 +539,6 @@ module nsp 'br/public:avm/res/network/network-security-perimeter:0.1.3' = {
 }
 
 output foundryEndpoint string = foundry.outputs.foundryEndpoint
-output acrName string = acr.outputs.name
 output resourceGroupName string = rg.name
 output containerAppName string = containerApp.outputs.name
 output containerAppAstroName string = containerAppAstro.outputs.name
