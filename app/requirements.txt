@@ -6,7 +6,7 @@ azure-identity==1.26.0b2
 azure-search-documents==11.7.0b2
 azure-data-tables>=12.5.0
 fastapi==0.130.0
-uvicorn[standard]==0.40.0
+uvicorn[standard]==0.42.0
 litellm[caching]>=1.40.0
 python-dotenv>=1.0.0
 slowapi>=0.1.9
