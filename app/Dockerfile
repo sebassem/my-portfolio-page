@@ -24,6 +24,8 @@ COPY requirements.txt .
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 RUN pip install --no-compile -r requirements.txt && \
+    # Security: Remove any .pth files that could execute arbitrary code (supply chain attack vector)
+    find /opt/venv -name "*.pth" -not -name "distutils-precedence.pth" -delete && \
     # Clean up unnecessary files to reduce size
     find /opt/venv -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true && \
     find /opt/venv -type f -name "*.pyc" -delete && \
