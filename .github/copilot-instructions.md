@@ -11,7 +11,7 @@ Browser → Astro (frontend, port 4321) → FastAPI (backend, port 8000) → Azu
 ```
 
 - **`/astro`** - Astro SSR frontend with Tailwind CSS v4
-- **`/app`** - FastAPI backend with LiteLLM and Azure AI integration
+- **`/app`** - FastAPI backend with Azure OpenAI SDK integration
 - **`/infra`** - Bicep IaC using Azure Verified Modules (AVM)
 - **`/cloudflare`** - DNS/CDN configuration
 
