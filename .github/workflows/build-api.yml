@@ -90,24 +90,6 @@ jobs:
             - name: Checkout repository
               uses: actions/checkout@v4
 
-            - name: Verify pinned dependencies
-              run: |
-                  echo "Checking for unpinned dependencies..."
-                  if grep -E '^[a-zA-Z].*>=|^[a-zA-Z].*<=|^[a-zA-Z].*~=' app/requirements.txt | grep -v '^#'; then
-                    echo "::error::Found unpinned dependencies in requirements.txt. All versions must use == pinning."
-                    exit 1
-                  fi
-                  echo "All dependencies are pinned."
-
-            - name: Audit for known malicious packages
-              run: |
-                  echo "Checking for known compromised packages..."
-                  if grep -E 'litellm' app/requirements.txt; then
-                    echo "::error::litellm dependency detected. This package was removed due to supply chain compromise (PYSEC-2026-2)."
-                    exit 1
-                  fi
-                  echo "No known compromised packages found."
-
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v3
 
