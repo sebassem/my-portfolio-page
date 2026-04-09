@@ -5,12 +5,11 @@ A FastAPI-based AI assistant that answers questions about Seif's professional ex
 
 Architecture:
 - Azure AI Search for RAG (Retrieval Augmented Generation)
-- Azure OpenAI via LiteLLM for LLM inference
+- Azure OpenAI SDK for LLM inference
 - Server-Sent Events (SSE) for real-time streaming responses
 
 Caching:
-- Default: In-memory local cache (works with scale-to-zero, resets on cold start)
-- Optional: Disk cache with Azure Files mount for persistent caching
+- Default: In-memory TTL cache (works with scale-to-zero, resets on cold start)
 
 Rate Limiting:
 - Default: In-memory (resets on container restart)
@@ -23,13 +22,17 @@ import random
 from pathlib import Path
 from typing import AsyncGenerator, Dict, List
 
+import hashlib
+import json
+import time
+
 import limits.storage as limits_storage
-import litellm
 import yaml
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from azure.search.documents import SearchClient
 from azure.search.documents.models import VectorizedQuery
-from openai import AzureOpenAI
+from cachetools import TTLCache
+from openai import AsyncAzureOpenAI, AzureOpenAI, RateLimitError
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -143,8 +146,15 @@ AZURE_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_RESPONSES_DEPLOYMENT_NAME")
 EMBEDDING_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME")
 
-# Azure OpenAI client for embeddings
+# Azure OpenAI client for embeddings (sync)
 openai_client = AzureOpenAI(
+    azure_endpoint=AZURE_ENDPOINT,
+    azure_ad_token_provider=openai_token_provider,
+    api_version="2024-05-01-preview"
+)
+
+# Azure OpenAI client for chat completions (async)
+async_openai_client = AsyncAzureOpenAI(
     azure_endpoint=AZURE_ENDPOINT,
     azure_ad_token_provider=openai_token_provider,
     api_version="2024-05-01-preview"
@@ -155,19 +165,17 @@ SEARCH_VECTOR_FIELD = os.getenv("AZURE_SEARCH_VECTOR_FIELD", "text_vector")
 
 
 # =============================================================================
-# LiteLLM Configuration
+# Response Cache Configuration
 # =============================================================================
 
-# Configure in-memory cache for response caching
-# Note: Cache resets on cold start but provides fast responses for repeated questions
-litellm.cache = litellm.Cache(type="local", ttl=CACHE_TTL)
+# In-memory TTL cache for LLM responses (resets on cold start)
+_response_cache: TTLCache = TTLCache(maxsize=256, ttl=CACHE_TTL)
 
-# Optional: Persistent disk cache with Azure Files mount
-# Uncomment and configure volume mount in Container App Bicep for persistence:
-# litellm.cache = litellm.Cache(type="disk", disk_cache_dir="/mnt/cache", ttl=CACHE_TTL)
 
-# Enable caching globally
-litellm.enable_cache()
+def _cache_key(model: str, messages: list, **kwargs) -> str:
+    """Generate a deterministic cache key from the request parameters."""
+    key_data = json.dumps({"model": model, "messages": messages, **kwargs}, sort_keys=True)
+    return hashlib.sha256(key_data.encode()).hexdigest()
 
 
 # =============================================================================
@@ -344,7 +352,7 @@ def is_rate_limit_error(exception: Exception) -> bool:
     Returns:
         True if this is a rate limit error
     """
-    if isinstance(exception, litellm.RateLimitError):
+    if isinstance(exception, RateLimitError):
         return True
     error_str = str(exception).lower()
     return "429" in error_str or "rate limit" in error_str
@@ -364,20 +372,14 @@ async def classify_question(question: str) -> bool:
         True if the question is relevant (should proceed to RAG), False if off-topic
     """
     try:
-        # Get fresh Azure AD token
-        token = openai_token_provider()
-        
         # Build lightweight classification prompt (no RAG context needed)
         classification_message = CLASSIFICATION_PROMPT.format(question=question)
         
-        response = await litellm.acompletion(
-            model=f"azure/{DEPLOYMENT_NAME}",
+        response = await async_openai_client.chat.completions.create(
+            model=DEPLOYMENT_NAME,
             messages=[
                 {"role": "user", "content": classification_message}
             ],
-            api_base=AZURE_ENDPOINT,
-            api_key=token,
-            api_version="2024-05-01-preview",
             max_tokens=10,
             temperature=0,  # Deterministic classification
             timeout=10,
@@ -438,19 +440,12 @@ async def stream_ai_response(question: str) -> AsyncGenerator[str, None]:
     ]
 
     try:
-        # Get fresh Azure AD token for this request
-        token = openai_token_provider()
-
         # Call Azure OpenAI with streaming
-        response = await litellm.acompletion(
-            model=f"azure/{DEPLOYMENT_NAME}",
+        response = await async_openai_client.chat.completions.create(
+            model=DEPLOYMENT_NAME,
             messages=messages,
-            api_base=AZURE_ENDPOINT,
-            api_key=token,
-            api_version="2024-05-01-preview",
             stream=True,
             max_tokens=1024,
-            num_retries=5,
             temperature=0.3,
             timeout=60,  # Longer timeout for streaming
         )
