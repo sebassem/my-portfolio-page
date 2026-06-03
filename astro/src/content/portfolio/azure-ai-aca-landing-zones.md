@@ -14,7 +14,7 @@ Authored the Azure AI Landing Zone design for Azure Container Apps, providing a 
 
 The design extends Azure Landing Zone principles to AI workloads, integrating governance, networking, identity, security, observability, and platform operations into a unified architecture for production-ready AI deployments.
 
-![Azure AI Landing Zones for Azure Container Apps Architecture](https://raw.githubusercontent.com/Azure/AI-Landing-Zones/main/docs/media/ai-landing-zones-aca-high-level-architecture.png)
+![Azure AI Landing Zones for Azure Container Apps Architecture](https://github.com/Azure/AI-Landing-Zones/blob/main/media/AI%20Landing%20Zones%20-%20ACA.png?raw=true)
 
 ### Key Features
 
