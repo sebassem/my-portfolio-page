@@ -1,4 +1,4 @@
-# Requirements for litellm_app.py (simplified implementation)
+# Requirements for litellm_app.py
 # IMPORTANT: All versions are pinned to prevent supply chain attacks.
 # Use `pip-compile requirements.in -o requirements.txt` to update.
 openai==2.8.1
@@ -9,9 +9,7 @@ azure-search-documents==11.7.0b2
 azure-data-tables==12.7.0
 fastapi==0.135.1
 uvicorn[standard]==0.42.0
-# Pinned to 1.82.6 - versions 1.82.7 and 1.82.8 were compromised (supply chain attack by TeamPCP)
-# See: https://github.com/pypa/advisory-database/blob/main/vulns/litellm/PYSEC-2026-2.yaml
-litellm[caching]==1.82.6
+cachetools==7.0.5
 python-dotenv==1.2.1
 slowapi==0.1.9
 
