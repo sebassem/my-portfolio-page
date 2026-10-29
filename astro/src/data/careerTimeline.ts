@@ -9,7 +9,19 @@ export interface TimelineItem {
 
 export const careerTimeline: TimelineItem[] = [
   {
-    year: "2023 - Present",
+    year: "Jul 2026 - Present",
+    title: "Cloud Enterprise Architect - Professional Services",
+    company: "Google Cloud",
+    logo: "/companies/google-cloud.svg",
+    description: "Helping enterprise customers design secure, scalable AI platforms and solutions on Google Cloud",
+    highlights: [
+      "Enterprise cloud architecture and platform foundations on Google Cloud",
+      "Help organizations architect and deploy Gemini Enterprise",
+      "Building agentic AI solutions on Gemini Platform"
+    ]
+  },
+  {
+    year: "2023 - Jul 2026",
     title: "Cloud Solution Architect - Tech strategy",
     company: "Microsoft",
     logo: "/companies/microsoft.png",
