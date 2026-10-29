@@ -9,6 +9,18 @@ export interface BlogPost {
 // This file can be populated dynamically via a build script or API
 export const blogPosts: BlogPost[] = [
   {
+    title: "Pub/Sub AI Enrichment with Gemini",
+    url: "https://blog.seifbassem.com/blogs/posts/ai-transformation-pubsub/",
+    image: "https://images.seifbassem.com/images/Posts/pubsub-ai-transformation/banner.png",
+    date: "2026-09-21"
+  },
+  {
+    title: "Measuring Gemini Enterprise Adoption with BigQuery",
+    url: "https://blog.seifbassem.com/blogs/posts/gemini-enterprise-bigquery/",
+    image: "https://images.seifbassem.com/images/Posts/gemini-enterprise-bq/banner.png",
+    date: "2026-08-02"
+  },
+  {
     title: "Self-Hosting LLMs on Kubernetes: Serving LLMs using vLLM",
     url: "https://seifbassem.com/blogs/posts/hosting-llms-k8s-vllm/",
     image: "https://images.seifbassem.com/images/Posts/Hosting-LLMs-K8s-vLLM/banner.png",
@@ -31,17 +43,5 @@ export const blogPosts: BlogPost[] = [
     url: "https://seifbassem.com/blogs/posts/llm-evaluation-langchain/",
     image: "https://images.seifbassem.com/images/Posts/llm-evaluation-openeval/banner.png",
     date: "2025-06-29"
-  },
-  {
-    title: "Simplifying private deployment of Azure AI services using AVM",
-    url: "https://seifbassem.com/blogs/posts/azure-ai-services-private-deployment/",
-    image: "https://images.seifbassem.com/images/Posts/Azure-AI-Services-Private-Deployment/banner.png",
-    date: "2025-05-06"
-  },
-  {
-    title: "Testing the latest Bicep Toys - Fail, Deployer and Graph",
-    url: "https://seifbassem.com/blogs/posts/bicep-fail-deployer-graph/",
-    image: "https://images.seifbassem.com/images/Posts/bicep-fail-deployer-graph/banner.png",
-    date: "2025-03-16"
   }
 ];
