@@ -16,10 +16,8 @@ export const careerTimeline: TimelineItem[] = [
     description: "Helping enterprise customers design secure, scalable AI platforms and solutions on Google Cloud",
     highlights: [
       "Enterprise cloud architecture and platform foundations on Google Cloud",
-      "Driving Gemini Enterprise adoption and measuring its business impact with BigQuery",
-      "Building agentic AI solutions on Gemini Platform",
-      "Designing containerized and AI workloads on GKE and Cloud Run",
-      "Real-time data and AI architectures with Pub/Sub and BigQuery"
+      "Help organizations architect and deploy Gemini Enterprise",
+      "Building agentic AI solutions on Gemini Platform"
     ]
   },
   {
