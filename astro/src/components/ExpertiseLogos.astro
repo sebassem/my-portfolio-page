@@ -1,25 +1,25 @@
 ---
 // Cloud & DevOps expertise logos
-import svgAzure from "../assets/cloud/azure-original.svg";
-import svgAks from "../assets/cloud/aks.svg";
-import svgAzureArc from "../assets/cloud/azure-arc.svg";
+import svgGoogleCloud from "../assets/cloud/google-cloud.svg";
+import svgGeminiEnterprise from "../assets/cloud/gemini-enterprise.svg";
+import svgGeminiPlatform from "../assets/cloud/gemini-platform.png";
+import svgGke from "../assets/cloud/gke.png";
+import svgCloudRun from "../assets/cloud/cloud-run.png";
 import svgKubernetes from "../assets/cloud/kubernetes-original.svg";
-import svgGithub from "../assets/cloud/github-original.svg";
-import svgPowershell from "../assets/cloud/powershell-original.svg";
 import svgAiOps from "../assets/cloud/ai-ops.svg";
-import svgFoundry from "../assets/cloud/microsoft-foundry.svg";
-import svgBicep from "../assets/cloud/bicep.png";
+import svgGithub from "../assets/cloud/github-original.svg";
+import svgAzure from "../assets/cloud/azure-original.svg";
 
 const tools = [
-  { name: "Azure", icon: svgAzure },
-  { name: "AKS", icon: svgAks },
-  { name: "Azure Arc", icon: svgAzureArc },
+  { name: "Google Cloud", icon: svgGoogleCloud },
+  { name: "Gemini Enterprise", icon: svgGeminiEnterprise },
+  { name: "Gemini Platform", icon: svgGeminiPlatform },
+  { name: "GKE", icon: svgGke },
+  { name: "Cloud Run", icon: svgCloudRun },
   { name: "Kubernetes", icon: svgKubernetes },
-  { name: "GitHub", icon: svgGithub },
-  { name: "PowerShell", icon: svgPowershell },
   { name: "AI", icon: svgAiOps },
-  { name: "Microsoft Foundry", icon: svgFoundry },
-  { name: "Bicep", icon: svgBicep },
+  { name: "GitHub", icon: svgGithub },
+  { name: "Azure", icon: svgAzure },
 ];
 ---
 
@@ -38,7 +38,7 @@ const tools = [
             height="48"
             class="transition-all duration-300"
           />
-          <span class="text-xs text-gray-600 group-hover:text-black transition-colors">
+          <span class="text-xs text-center max-w-24 text-gray-600 group-hover:text-black transition-colors">
             {tool.name}
           </span>
         </div>
