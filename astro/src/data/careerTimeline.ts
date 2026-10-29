@@ -13,7 +13,7 @@ export const careerTimeline: TimelineItem[] = [
     title: "Cloud Enterprise Architect - Professional Services",
     company: "Google Cloud",
     logo: "/companies/google-cloud.svg",
-    description: "Helping enterprise customers design secure, scalable platforms on Google Cloud and take Gemini and generative AI from pilot to production.",
+    description: "Helping enterprise customers design secure, scalable AI platforms and solutions on Google Cloud",
     highlights: [
       "Enterprise cloud architecture and platform foundations on Google Cloud",
       "Driving Gemini Enterprise adoption and measuring its business impact with BigQuery",
