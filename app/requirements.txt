@@ -40,7 +40,7 @@ jiter==0.13.0
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
 limits==5.8.0
-litellm[caching]==1.82.6
+litellm[caching]==1.83.0
 markdown-it-py==4.0.0
 markupsafe==3.0.3
 mdurl==0.1.2
