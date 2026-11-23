@@ -52,8 +52,8 @@ openai==3.41.0
 packaging==26.0
 propcache==0.4.1
 pycparser==3.0
-pydantic==2.12.5
-pydantic-core==2.41.5
+pydantic==2.14.4
+pydantic-core==2.50.5
 pygments==2.20.0
 pyjwt[crypto]==2.12.1
 python-dotenv==1.2.1
@@ -72,8 +72,8 @@ tokenizers==0.22.2
 tqdm==4.67.3
 truststore==0.10.5
 typer==0.24.1
-typing-extensions==4.15.0
-typing-inspection==0.4.2
+typing-extensions==4.16.0
+typing-inspection==0.4.5
 urllib3==2.6.3
 uvicorn[standard]==0.43.0
 uvloop==0.22.1
