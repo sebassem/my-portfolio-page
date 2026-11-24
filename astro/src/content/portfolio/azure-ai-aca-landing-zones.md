@@ -1,6 +1,6 @@
 ---
 name: "AI Landing Zone for Azure Container Apps"
-category: ["Contributions"]
+category: ["Community"]
 cover: "https://github.com/Azure/AI-Landing-Zones/raw/main/media/AI%20Landing%20Zones%20-%20ACA.png"
 link: "https://github.com/Azure/AI-Landing-Zones/blob/main/docs/AI-Landing-Zones-Design-ACA.md"
 order: 14

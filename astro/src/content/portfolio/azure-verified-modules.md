@@ -1,6 +1,6 @@
 ---
 name: "Azure Verified Modules Contributor"
-category: ["Contributions"]
+category: ["Community"]
 cover: "https://images.seifbassem.com/images/portfolio/avm/banner.png"
 link: "https://azure.github.io/Azure-Verified-Modules/"
 order: 10

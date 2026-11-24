@@ -1,6 +1,6 @@
 ---
 name: "Azure Advisor Cost Optimization Workbook"
-category: ["Contributions"]
+category: ["Community"]
 cover: "https://images.seifbassem.com/images/portfolio/cost-optimization-workbook/banner.png"
 link: "https://learn.microsoft.com/azure/advisor/advisor-cost-optimization-workbook"
 order: 6
