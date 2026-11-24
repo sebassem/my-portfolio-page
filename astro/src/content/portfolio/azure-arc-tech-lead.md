@@ -1,6 +1,6 @@
 ---
 name: "Azure Arc - Global Tech Lead"
-category: ["Contributions"]
+category: ["Community"]
 cover: "https://images.seifbassem.com/images/portfolio/arc-tech-lead/banner.png"
 link: "https://azure.microsoft.com/products/azure-arc"
 order: 8

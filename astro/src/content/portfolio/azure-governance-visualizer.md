@@ -1,6 +1,6 @@
 ---
 name: "Azure Governance Visualizer Accelerator"
-category: ["Contributions"]
+category: ["Community"]
 cover: "https://images.seifbassem.com/images/portfolio/azgovviz/banner.png"
 link: "https://github.com/Azure/Azure-Governance-Visualizer"
 order: 15

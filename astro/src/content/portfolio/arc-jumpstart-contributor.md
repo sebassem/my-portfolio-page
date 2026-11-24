@@ -1,6 +1,6 @@
 ---
 name: "Azure Arc Jumpstart - Active Contributor"
-category: ["Contributions"]
+category: ["Community"]
 cover: "https://images.seifbassem.com/images/portfolio/arc-jumpstart/banner.png"
 link: "https://azurearcjumpstart.com"
 order: 5
