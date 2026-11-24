@@ -1,6 +1,8 @@
 ---
 import svgUnderline from "../assets/underline.svg";
-import { blogPosts } from "../data/blogPosts";
+import { getLatestBlogPosts } from "../data/blogPosts";
+
+const blogPosts = await getLatestBlogPosts(6);
 ---
 
 <section class="py-20 px-5" id="blog">
