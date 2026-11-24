@@ -1,11 +1,94 @@
+---
+import { author } from '../sample';
+
+interface Props {
+	title?: string;
+	description?: string;
+	image?: string;
+}
+
+const SITE_URL = 'https://seifbassem.com';
+const BLOG_URL = 'https://blog.seifbassem.com';
+
+const {
+	title = 'Seif Bassem — Cloud & AI Enterprise Architect',
+	description = 'Portfolio of Seif Bassem, Cloud & AI Enterprise Architect specializing in scalable multi-cloud platforms, enterprise AI architectures, Kubernetes, and Infrastructure as Code.',
+	image = 'https://images.seifbassem.com/images/Posts/AI-portfolio-website/banner.png',
+} = Astro.props;
+
+const canonicalUrl = new URL(Astro.url.pathname, SITE_URL).toString();
+const sameAsLinks = [BLOG_URL, author.linkedin, author.github, author.x];
+
+const schemas = [
+	{
+		'@context': 'https://schema.org',
+		'@type': 'WebSite',
+		name: 'Seif Bassem',
+		url: SITE_URL,
+		description,
+		author: {
+			'@type': 'Person',
+			name: author.name,
+			url: SITE_URL,
+		},
+	},
+	{
+		'@context': 'https://schema.org',
+		'@type': 'Person',
+		name: author.name,
+		jobTitle: 'Cloud & AI Enterprise Architect',
+		url: SITE_URL,
+		sameAs: sameAsLinks,
+	},
+];
+---
+
 <!doctype html>
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.png" />
+		<link rel="canonical" href={canonicalUrl} />
+		{sameAsLinks.map((url) => (
+			<link rel="me" href={url} />
+		))}
+
+		<!-- Preconnect & Fonts aligned with blog.seifbassem.com -->
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link rel="preconnect" href="https://images.seifbassem.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400;500&family=Google+Sans+Flex:opsz,wdth,wght@6..144,75..100,300..800&display=swap"
+			rel="stylesheet"
+		/>
+		<link
+			href="https://cdn.jsdelivr.net/npm/remixicon@4.6.0/fonts/remixicon.css"
+			rel="stylesheet"
+		/>
+
 		<meta name="generator" content={Astro.generator} />
-		<title>Seif Bassem</title>
+		<title>{title}</title>
+		<meta name="description" content={description} />
+		<meta name="author" content={author.name} />
+
+		<!-- Open Graph / Twitter -->
+		<meta property="og:type" content="website" />
+		<meta property="og:url" content={canonicalUrl} />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:image" content={image} />
+		<meta property="og:site_name" content="Seif Bassem" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content={image} />
+
+		<!-- Schema.org JSON-LD Structured Data -->
+		{schemas.map((schema) => (
+			<script type="application/ld+json" set:html={JSON.stringify(schema)} />
+		))}
+
 		<!-- Microsoft Clarity -->
 		<script type="text/javascript">
 			(function(c,l,a,r,i,t,y){
@@ -35,8 +118,13 @@ body {
 	width: 100%;
 	height: 100%;
 	background-color: var(--main-bg);
-	font-family: "Space Grotesk", sans-serif;
+	font-family: "Google Sans Flex", sans-serif;
 	scroll-behavior: smooth;
+}
+
+pre,
+code {
+	font-family: "Google Sans Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 </style>
